@@ -48,7 +48,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({ visible, onClose }) => {
         setIsModalVisible(false);
       });
     }
-  }, [visible]);
+  }, [visible, slideAnim]);
 
   const handleNavigation = (route: string) => {
     onClose();

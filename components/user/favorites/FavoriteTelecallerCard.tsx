@@ -31,16 +31,19 @@ export const FavoriteTelecallerCard: React.FC<FavoriteTelecallerCardProps> = ({ 
     if (!isOpen && translateX.value < 0) {
       translateX.value = withTiming(0, TIMING_CONFIG);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const openCard = useCallback(() => {
     translateX.value = withTiming(-SLIDE_DISTANCE, TIMING_CONFIG);
     onOpen();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onOpen]);
 
   const closeCard = useCallback(() => {
     translateX.value = withTiming(0, TIMING_CONFIG);
     onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose]);
 
   const showHintBounce = useCallback(() => {
@@ -48,6 +51,7 @@ export const FavoriteTelecallerCard: React.FC<FavoriteTelecallerCardProps> = ({ 
       withTiming(-50, { duration: 150 }),
       withTiming(0, { duration: 150 })
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTap = useCallback(() => {
@@ -56,6 +60,7 @@ export const FavoriteTelecallerCard: React.FC<FavoriteTelecallerCardProps> = ({ 
     } else {
       showHintBounce();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [closeCard, showHintBounce]);
 
   const panGesture = Gesture.Pan()

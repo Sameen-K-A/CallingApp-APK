@@ -20,6 +20,7 @@ export default function SplashScreen() {
     if (isMinTimeComplete && !isAuthLoading) {
       handleNavigation();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMinTimeComplete, isAuthLoading]);
 
   const handleNavigation = () => {

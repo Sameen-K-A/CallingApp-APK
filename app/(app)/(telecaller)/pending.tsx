@@ -6,7 +6,6 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/context/AuthContext";
 import { getInitials } from "@/utils/formatter";
 import { Ionicons } from "@expo/vector-icons";
-import { AxiosError } from "axios";
 import { format } from "date-fns";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -18,14 +17,13 @@ const SUPPORT_PHONE = "9000000000";
 
 export default function PendingApproval() {
   const { user, logout, refreshUser, isRefreshing } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showError, setShowError] = useState<string | null>(null);
 
   if (!user) {
     router.replace("/(auth)/login");
     return null;
   }
-
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [showError, setShowError] = useState<string | null>(null);
 
   const handleRefresh = async () => {
     setShowError(null);
@@ -41,7 +39,7 @@ export default function PendingApproval() {
           router.replace("/(app)/(telecaller)/rejected");
         }
       }
-    } catch (error: AxiosError | any) {
+    } catch (error: any) {
       setShowError(
         error.response?.data?.message
           ? (error.response?.data?.message as string)
@@ -150,7 +148,7 @@ export default function PendingApproval() {
                     className="text-sm text-textMuted"
                     allowFontScaling={false}
                   >
-                    We're reviewing your application
+                    We&apos;re reviewing your application
                   </Text>
                 </View>
               </View>
@@ -162,7 +160,7 @@ export default function PendingApproval() {
                     className="text-sm text-amber-600 ml-2 flex-1"
                     allowFontScaling={false}
                   >
-                    Usually takes up to 24 hours. We'll notify you once reviewed.
+                    Usually takes up to 24 hours. We&apos;ll notify you once reviewed.
                   </Text>
                 </View>
               </View>

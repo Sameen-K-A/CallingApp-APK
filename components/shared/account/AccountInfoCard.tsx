@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import React from "react";
 import { Text, View } from "react-native";
 
-interface AccountInfoCardProps extends Pick<IAuthUser, "accountStatus" | "createdAt"> { }
+type AccountInfoCardProps = Pick<IAuthUser, "accountStatus" | "createdAt">;
 
 export function AccountInfoCard({ accountStatus, createdAt }: AccountInfoCardProps) {
   const isActive = accountStatus === "ACTIVE";

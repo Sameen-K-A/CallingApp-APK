@@ -19,12 +19,6 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 
 export default function Account() {
   const { user, updateUser } = useAuth();
-
-  if (!user) {
-    router.replace("/(auth)/login");
-    return null;
-  };
-
   const { handleError } = useErrorHandler();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +33,11 @@ export default function Account() {
     },
     mode: "onBlur",
   });
+
+  if (!user) {
+    router.replace("/(auth)/login");
+    return null;
+  };
 
   const { control, watch, formState: { errors } } = userForm;
   const watchedValues = watch();

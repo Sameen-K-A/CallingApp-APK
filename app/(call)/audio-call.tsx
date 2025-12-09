@@ -39,6 +39,7 @@ export default function AudioCall() {
       clearTimeout(connectionTimer);
       stop();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCancel = () => {

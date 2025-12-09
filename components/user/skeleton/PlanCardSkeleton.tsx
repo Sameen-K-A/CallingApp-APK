@@ -7,6 +7,7 @@ const SkeletonBox: React.FC<{ className?: string }> = ({ className }) => {
 
   useEffect(() => {
     opacity.value = withRepeat(withTiming(0.7, { duration: 800 }), -1, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({

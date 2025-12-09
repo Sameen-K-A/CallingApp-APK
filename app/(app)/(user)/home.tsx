@@ -54,6 +54,7 @@ export default function Home() {
   useEffect(() => {
     setIsLoading(true);
     fetchTelecallers(1).finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLoadMore = useCallback(async () => {
@@ -129,7 +130,7 @@ export default function Home() {
           allowFontScaling={false}
           className="text-xl font-bold text-text mb-1"
         >
-          Let's Get Talking
+          Let&apos;s Get Talking
         </Text>
         <Text
           allowFontScaling={false}
@@ -210,7 +211,7 @@ export default function Home() {
                       allowFontScaling={false}
                       className="text-sm text-textMuted ml-2"
                     >
-                      You've seen all telecallers
+                      You&apos;ve seen all telecallers
                     </Text>
                   </View>
                 </View>

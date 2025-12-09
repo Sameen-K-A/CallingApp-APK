@@ -125,7 +125,7 @@ export default function Favorites() {
         <View className="flex-row items-center px-4 py-2 bg-muted rounded-full">
           <Ionicons name="heart" size={16} color="#EF4444" />
           <Text allowFontScaling={false} className="text-sm text-textMuted ml-2">
-            That's all your favorites
+            That&apos;s all your favorites
           </Text>
         </View>
       </View>

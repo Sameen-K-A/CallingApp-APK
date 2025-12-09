@@ -14,12 +14,6 @@ const ITEMS_PER_PAGE = 10;
 
 export default function TransactionHistory() {
   const { user } = useAuth();
-
-  if (!user) {
-    router.replace("/(auth)/login");
-    return null;
-  }
-
   const [transactions, setTransactions] = useState<ITransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -50,6 +44,7 @@ export default function TransactionHistory() {
   useEffect(() => {
     setIsLoading(true);
     fetchTransactions(1).finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLoadMore = useCallback(async () => {
@@ -67,6 +62,20 @@ export default function TransactionHistory() {
     setIsRefreshing(false);
   }, [fetchTransactions]);
 
+  const renderItem = useCallback(
+    ({ item }: { item: ITransaction }) => (
+      <View className="px-4">
+        <TransactionCard transaction={item} onPress={openSheet} />
+      </View>
+    ),
+    []
+  );
+
+  if (!user) {
+    router.replace("/(auth)/login");
+    return null;
+  };
+
   const openSheet = (transaction: ITransaction) => {
     setSelectedTransaction(transaction);
     setSheetVisible(true);
@@ -76,15 +85,6 @@ export default function TransactionHistory() {
     setSheetVisible(false);
     setTimeout(() => setSelectedTransaction(null), 300);
   };
-
-  const renderItem = useCallback(
-    ({ item }: { item: ITransaction }) => (
-      <View className="px-4">
-        <TransactionCard transaction={item} onPress={openSheet} />
-      </View>
-    ),
-    []
-  );
 
   if (isLoading) {
     return (
@@ -149,7 +149,7 @@ export default function TransactionHistory() {
                       allowFontScaling={false}
                       className="text-sm text-textMuted ml-2"
                     >
-                      You've seen all transactions
+                      You&apos;ve seen all transactions
                     </Text>
                   </View>
                 </View>

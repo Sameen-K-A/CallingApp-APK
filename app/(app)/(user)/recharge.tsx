@@ -15,12 +15,6 @@ import { Alert, FlatList, RefreshControl, ScrollView, Text, View } from "react-n
 
 export default function Recharge() {
   const { user } = useAuth();
-
-  if (!user) {
-    router.replace("/(auth)/login");
-    return null;
-  }
-
   const [plans, setPlans] = useState<IPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -28,7 +22,7 @@ export default function Recharge() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [balance, setBalance] = useState(user.wallet?.balance || 0);
+  const [balance, setBalance] = useState(user?.wallet?.balance || 0);
 
   const fetchPlans = useCallback(async () => {
     try {
@@ -50,6 +44,20 @@ export default function Recharge() {
     await fetchPlans();
     setIsRefreshing(false);
   }, [fetchPlans]);
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: IPlan; index: number }) => (
+      <View className={`w-1/2 p-1.5 ${index % 2 === 0 ? "pl-4 pr-1.5" : "pr-4 pl-1.5"}`}>
+        <PlanCard plan={item} onPress={openConfirmation} />
+      </View>
+    ),
+    []
+  );
+
+  if (!user) {
+    router.replace("/(auth)/login");
+    return null;
+  };
 
   const openConfirmation = (plan: IPlan) => {
     setSelectedPlan(plan);
@@ -95,15 +103,6 @@ export default function Recharge() {
     </View>
   );
 
-  const renderItem = useCallback(
-    ({ item, index }: { item: IPlan; index: number }) => (
-      <View className={`w-1/2 p-1.5 ${index % 2 === 0 ? "pl-4 pr-1.5" : "pr-4 pl-1.5"}`}>
-        <PlanCard plan={item} onPress={openConfirmation} />
-      </View>
-    ),
-    []
-  );
-
   const renderFooter = () => {
     if (plans.length === 0) return null;
 
@@ -115,7 +114,7 @@ export default function Recharge() {
             allowFontScaling={false}
             className="text-sm text-textMuted ml-2"
           >
-            You've seen all plans
+            You&apos;ve seen all plans
           </Text>
         </View>
       </View>

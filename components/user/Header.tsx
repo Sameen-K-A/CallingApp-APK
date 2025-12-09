@@ -26,13 +26,13 @@ const formatCoinNumber = (num: number): string => {
 
 export const Header: React.FC<HeaderProps> = ({ onMenuPress }) => {
   const { user } = useAuth();
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
+
   if (!user) {
     router.replace("/(auth)/login");
     return;
   };
-
-  const pathname = usePathname();
-  const insets = useSafeAreaInsets();
 
   const isHome = pathname === "/home" || pathname === "/(user)/home";
   const headerContent = USER_HEADER_CONTENTS[pathname];

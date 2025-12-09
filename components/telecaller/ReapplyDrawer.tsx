@@ -60,6 +60,7 @@ export const ReapplyDrawer: React.FC<ReapplyDrawerProps> = ({ visible, onClose, 
         about: initialData.about || "",
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, initialData]);
 
   const maxDate = new Date();

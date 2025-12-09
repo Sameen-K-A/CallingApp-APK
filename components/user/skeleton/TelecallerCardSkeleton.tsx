@@ -21,6 +21,7 @@ const SkeletonPulse: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     );
     animation.start();
     return () => animation.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return <Animated.View style={{ opacity }}>{children}</Animated.View>;

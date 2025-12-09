@@ -44,6 +44,7 @@ export default function CallHistory() {
   useEffect(() => {
     setIsLoading(true);
     fetchCallHistory(1).finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLoadMore = useCallback(async () => {
@@ -148,7 +149,7 @@ export default function CallHistory() {
                   <View className="flex-row items-center px-4 py-2 bg-muted rounded-full">
                     <Ionicons name="checkmark-circle" size={16} color="#6B7280" />
                     <Text className="text-sm text-textMuted ml-2">
-                      That's all your call history
+                      That&apos;s all your call history
                     </Text>
                   </View>
                 </View>

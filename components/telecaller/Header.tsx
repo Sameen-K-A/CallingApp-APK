@@ -9,13 +9,13 @@ import { Avatar } from "../shared/avatars";
 
 export const Header: React.FC = () => {
   const { user } = useAuth();
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
+
   if (!user) {
     router.replace("/(auth)/login");
     return;
   };
-
-  const pathname = usePathname();
-  const insets = useSafeAreaInsets();
 
   const isDashboard = pathname === "/dashboard" || pathname === "/(telecaller)/dashboard";
   const headerContent = TELECALLER_HEADER_CONTENTS[pathname];

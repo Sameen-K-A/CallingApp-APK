@@ -25,7 +25,7 @@ export default function VideoCall() {
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [isCameraOff, setIsCameraOff] = useState(false);
-  const [isRemoteCameraOff, setIsRemoteCameraOff] = useState(false);
+  const [isRemoteCameraOff] = useState(false);
 
   const { seconds, formatted, start, stop } = useCallTimer();
 
@@ -41,6 +41,7 @@ export default function VideoCall() {
       clearTimeout(connectionTimer);
       stop();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCancel = () => {

@@ -17,6 +17,7 @@ const RotatingRing = () => {
 
   useEffect(() => {
     rotation.value = withRepeat(withTiming(360, { duration: 3000, easing: Easing.linear }), -1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -36,6 +37,7 @@ const StatusDot = () => {
 
   useEffect(() => {
     opacity.value = withRepeat(withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }), -1, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({

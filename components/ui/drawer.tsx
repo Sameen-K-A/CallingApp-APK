@@ -87,6 +87,7 @@ const DrawerRoot: React.FC<DrawerProps> = ({ visible, onClose, children }) => {
     } else if (!visible && showModal) {
       close();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const panResponder = useRef(
@@ -301,3 +302,4 @@ export const Drawer = Object.assign(DrawerRoot, {
 });
 
 export { useDrawerClose };
+
