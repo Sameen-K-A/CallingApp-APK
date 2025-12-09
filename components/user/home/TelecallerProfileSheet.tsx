@@ -124,7 +124,7 @@ export const TelecallerProfileSheet: React.FC<TelecallerProfileSheetProps> = ({
               disabled={isFavoriteLoading}
             >
               {isFavoriteLoading ? (
-                <ActivityIndicator size="small" color="#EF4444" />
+                <ActivityIndicator size={24} color="#EF4444" />
               ) : (
                 <Ionicons
                   name={isFavorite ? "heart" : "heart-outline"}
