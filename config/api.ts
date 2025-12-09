@@ -21,6 +21,7 @@ export const API_CONFIG = {
     GET_TELECALLERS: '/users/telecallers',
 
     // Telecaller
+    RE_APPLY_APPLICATION: "/telecaller/reapply",
     TELE_EDIT_PROFILE: '/telecaller/edit-profile',
   },
 }

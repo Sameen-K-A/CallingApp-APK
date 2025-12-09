@@ -2,7 +2,11 @@ import { LanguagePickerModal, getLanguageName } from "@/components/shared/Langua
 import { Button, ButtonText } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
+import { API_CONFIG } from "@/config/api";
+import { useAuth } from "@/context/AuthContext";
 import { ReapplyFormData, reapplySchema } from "@/schemas/auth.schema";
+import apiClient from "@/services/api.service";
+import { IAuthUser } from "@/types/general";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -22,7 +26,14 @@ interface ReapplyDrawerProps {
   };
 }
 
+export interface IReapplyAPIResponse {
+  success: boolean;
+  message: string;
+  data: IAuthUser;
+}
+
 export const ReapplyDrawer: React.FC<ReapplyDrawerProps> = ({ visible, onClose, onSuccess, initialData }) => {
+  const { updateUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
@@ -85,20 +96,23 @@ export const ReapplyDrawer: React.FC<ReapplyDrawerProps> = ({ visible, onClose, 
 
   const onSubmit = async (data: ReapplyFormData) => {
     setIsSubmitting(true);
+    try {
+      const payload = {
+        name: data.name.trim(),
+        dob: data.dob!.toISOString(),
+        language: data.language,
+        about: data.about.trim(),
+      };
 
-    const payload = {
-      name: data.name.trim(),
-      dob: data.dob!.toISOString(),
-      language: data.language,
-      about: data.about.trim(),
-    };
+      const response = await apiClient.patch<IReapplyAPIResponse>(API_CONFIG.ENDPOINTS.RE_APPLY_APPLICATION, payload);
+      await updateUser(response.data.data);
 
-    console.log("Re-apply Payload:", payload);
-
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    setIsSubmitting(false);
-    onSuccess();
+      onSuccess();
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
