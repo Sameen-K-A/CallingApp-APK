@@ -1,0 +1,217 @@
+# 📦 Application Folder Structure
+
+/application  
+├── app  
+│   ├── (app)  
+│   │   ├── (call)  
+│   │   │   ├── _layout.tsx  
+│   │   │   ├── audio-call.tsx  
+│   │   │   ├── video-call.tsx  
+│   │   │   └── feedback.tsx  
+│   │   ├── (onboarding)  
+│   │   │   ├──_layout.tsx  
+│   │   │   └── profile-setup.tsx  
+│   │   ├── (user)  
+│   │   │   ├── _layout.tsx  
+│   │   │   ├── account.tsx  
+│   │   │   ├── call-history.tsx  
+│   │   │   ├── favorites.tsx  
+│   │   │   ├── recharge.tsx  
+│   │   │   ├── help.tsx  
+│   │   │   ├── home.tsx  
+│   │   │   └── transaction-history.tsx  
+│   │   ├── (telecaller)  
+│   │   │   ├──_layout.tsx  
+│   │   │   ├── dashboard.tsx  
+│   │   │   ├── account.tsx  
+│   │   │   ├── wallet.tsx  
+│   │   │   ├── pending.tsx  
+│   │   │   └── rejected.tsx  
+│   │   └── _layout.tsx  
+│   ├── (auth)  
+│   │   ├──_layout.tsx  
+│   │   ├── otp.tsx  
+│   │   └── login.tsx  
+│   ├── _layout.tsx  
+│   ├── global.css  
+│   └── index.tsx  
+├── assets  
+│   ├── fonts  
+│   │   ├── Nexa-Heavy.ttf  
+│   │   └── Nexa-ExtraLight.ttf  
+│   └── images  
+├── components  
+│   ├── call  
+│   │   ├── AudioConnectedState.tsx  
+│   │   ├── CallControls.tsx  
+│   │   ├── ConnectingState.tsx  
+│   │   ├── SelfVideoPreview.tsx  
+│   │   └── VideoConnectedState.tsx  
+│   ├── shared  
+│   │   ├── account  
+│   │   │   ├── AccountInfoCard.tsx  
+│   │   │   ├── EditProfileForm.tsx  
+│   │   │   ├── PersonalInfoCard.tsx  
+│   │   │   └── ProfileHeader.tsx  
+│   │   ├── avatars  
+│   │   │   └── index.tsx  
+│   │   ├── help  
+│   │   │   ├── index.ts  
+│   │   │   ├── BugReportDrawer.tsx  
+│   │   │   ├── ContactDrawer.tsx  
+│   │   │   ├── HelpItem.tsx  
+│   │   │   ├── PolicyDrawer.tsx  
+│   │   │   └── SectionHeader.tsx  
+│   │   ├── profile-setup  
+│   │   │   ├── BasicInfoStep.tsx  
+│   │   │   ├── TelecallerStep.tsx  
+│   │   │   └── OtherSteps.tsx  
+│   │   ├── Loading.tsx  
+│   │   ├── LanguagePickerModal.tsx  
+│   │   └── LogoutModal.tsx  
+│   ├── user  
+│   │   ├── call-history  
+│   │   │   ├── CallDetailsSheet.tsx  
+│   │   │   ├── CallHistoryCard.tsx  
+│   │   │   └── EmptyCallHistoryState.tsx  
+│   │   ├── favorites  
+│   │   │   ├── EmptyFavoritesState.tsx  
+│   │   │   └── FavoriteTelecallerCard.tsx  
+│   │   ├── home  
+│   │   │   ├── EmptyTelecallerState.tsx  
+│   │   │   ├── TelecallerCard.tsx  
+│   │   │   └── TelecallerProfileSheet.tsx  
+│   │   ├── recharge  
+│   │   │   ├── BalanceCard.tsx  
+│   │   │   ├── ConfirmationModal.tsx  
+│   │   │   ├── EmptyPlansState.tsx  
+│   │   │   ├── PlanCard.tsx  
+│   │   │   └── SuccessModal.tsx  
+│   │   ├── transaction-history  
+│   │   │   ├── EmptyTransactionState.tsx  
+│   │   │   ├── TransactionCard.tsx  
+│   │   │   └── TransactionDetailsSheet.tsx  
+│   │   ├── skeleton  
+│   │   │   ├── PlanCardSkeleton.tsx  
+│   │   │   ├── TelecallerCardSkeleton.tsx  
+│   │   │   └── TransactionCardSkeleton.tsx  
+│   │   ├── Header.tsx  
+│   │   ├── TabBar.tsx  
+│   │   └── SideDrawer.tsx  
+│   ├── telecaller  
+│   │   ├── Header.tsx  
+│   │   └── TabBar.tsx  
+│   ├── lib  
+│   │   └── utils.ts  
+│   └── ui  
+│       ├── aurora-background.tsx  
+│       ├── button.tsx  
+│       ├── input.tsx  
+│       ├── drawer.tsx  
+│       ├── otp-input.tsx  
+│       ├── separator.tsx  
+│       └── slot.tsx  
+├── config  
+│   └── api.ts  
+├── constants  
+│   ├── dummyData.ts  
+│   ├── help.ts  
+│   ├── language.ts  
+│   └── navigation.ts  
+├── context  
+│   └── AuthContext.tsx  
+├── hooks  
+│   ├── useCallTimer.ts  
+│   └── useErrorHandler.ts  
+├── schemas  
+│   ├── auth.schema.ts  
+│   ├── telecaller.schema.ts  
+│   └── user.schema.ts  
+├── service  
+│   └── api.service.ts  
+├── socket  
+│   ├── hooks  
+│   │   ├── useTelecallerSocket.ts  
+│   │   └── useUserSocket.ts  
+│   ├── telecaller.socket.ts  
+│   ├── types.ts  
+│   └── user.socket.ts  
+├── types  
+│   ├── api.d.ts  
+│   ├── declarations.d.ts  
+│   ├── general.d.ts  
+│   └── user.d.ts  
+├── utils  
+│   └── formatter.ts  
+├── node_modules  
+├── .env  
+├── .gitignore  
+├── app.json  
+├── babel.config.js  
+├── eslint.config.js  
+├── expo-env.d.ts  
+├── metro.config.js  
+├── nativewind-env.d.ts  
+├── package.json  
+├── package-lock.json  
+├── README.md  
+├── tailwind.config.js  
+└── tsconfig.json  
+
+=====================================================================
+
+## 📱 App Routes
+
+app/  
+├── _layout.tsx                             # Root layout (AuthProvider, fonts, StatusBar)  
+├── index.tsx                               # Splash screen (entry point + navigation logic)  
+├── global.css                              # Global styles  
+│  
+├── (auth)/                                 # 🔓 Public routes (unauthenticated)  
+│   ├──_layout.tsx                         # Guard: redirects to (app) if authenticated  
+│   ├── login.tsx                           # Login screen  
+│   └── otp.tsx                             # OTP verification screen  
+│  
+└── (app)/                                  # 🔒 Protected routes (authenticated)  
+    ├── _layout.tsx                         # Guard: redirects to login if not authenticated  
+    │  
+    ├── (call)/                             # 📞 Call routes (shared for user & telecaller)  
+    │   ├──_layout.tsx                     # Guard: validates profile complete  
+    │   ├── audio-call.tsx                  # Audio call screen (connecting → connected states)  
+    │   ├── video-call.tsx                  # Video call screen (connecting → connected states, WhatsApp style)  
+    │   └── feedback.tsx                    # Post-call feedback screen  
+    │  
+    ├── (onboarding)/                       # 📝 Profile setup routes (shared for all roles)  
+    │   ├── _layout.tsx                     # Guard: redirects if profile already complete  
+    │   └── profile-setup.tsx               # Wizard-style profile setup screen  
+    │  
+    ├── (user)/                             # 👤 User-only routes  
+    │   ├──_layout.tsx                     # Guard + socket connection + renders Header, TabBar, SideDrawer  
+    │   ├── account.tsx                     # User account screen (view/edit profile)  
+    │   ├── call-history.tsx                # User call history screen  
+    │   ├── favorites.tsx                   # User favorite telecallers screen (swipeable cards)  
+    │   ├── recharge.tsx                    # User recharge coin for connect telecaller screen  
+    │   ├── help.tsx                        # Help screen (contact us, privacy, payment policies, T&C)  
+    │   ├── home.tsx                        # User home screen (telecaller listing with infinite scroll)  
+    │   └── transaction-history.tsx         # User transaction history screen  
+    │  
+    └── (telecaller)/                       # 📞 Telecaller-only routes  
+        ├── _layout.tsx                     # Guard + socket connection  
+        ├── dashboard.tsx                   # Telecaller dashboard (APPROVED only)  
+        ├── account.tsx                     # Telecaller account settings/ managing screen (APPROVED only)  
+        ├── wallet.tsx                      # Telecaller wallet/coin card/withdrawel side (APPROVED only)  
+        ├── pending.tsx                     # Approval pending screen  
+        └── rejected.tsx                    # Approval rejected screen  
+
+=====================================================================
+
+## 🔌 Socket Structure
+
+socket/  
+├── hooks/  
+│   ├── useUserSocket.ts                    # Hook for user presence (connects on mount, handles app state & network)  
+│   └── useTelecallerSocket.ts              # Hook for telecaller presence (connects on mount, handles app state & network)  
+│  
+├── user.socket.ts                          # User socket manager (connect, disconnect, getInstance)  
+├── telecaller.socket.ts                    # Telecaller socket manager (connect, disconnect, getInstance)  
+└── types.ts                                # Shared socket types (ServerEvents, ClientEvents, SocketError)  
