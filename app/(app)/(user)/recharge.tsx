@@ -6,15 +6,17 @@ import { SuccessModal } from "@/components/user/recharge/SuccessModal";
 import { PlanListSkeleton } from "@/components/user/skeleton/PlanCardSkeleton";
 import { API_CONFIG } from "@/config/api";
 import { useAuth } from "@/context/AuthContext";
+import useErrorHandler from "@/hooks/useErrorHandler";
 import apiClient from "@/services/api.service";
 import { IPlan } from "@/types/user";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, FlatList, RefreshControl, ScrollView, Text, View } from "react-native";
+import { FlatList, RefreshControl, ScrollView, Text, View } from "react-native";
 
 export default function Recharge() {
   const { user } = useAuth();
+  const { handleError } = useErrorHandler();
   const [plans, setPlans] = useState<IPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -29,10 +31,9 @@ export default function Recharge() {
       const { data } = await apiClient.get<{ success: boolean; data: IPlan[] }>(API_CONFIG.ENDPOINTS.GET_PLANS);
       setPlans(data.data);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to fetch plans";
-      Alert.alert("Error", message);
+      handleError(error, "Failed to collect recharge plans.");
     }
-  }, []);
+  }, [handleError]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -81,8 +82,7 @@ export default function Recharge() {
       }, 350);
 
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Payment failed";
-      Alert.alert("Error", message);
+      handleError(error, "Payment failed")
     } finally {
       setIsProcessing(false);
     }

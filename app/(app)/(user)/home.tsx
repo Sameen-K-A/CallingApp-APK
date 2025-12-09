@@ -3,11 +3,13 @@ import { TelecallerCard } from "@/components/user/home/TelecallerCard";
 import { TelecallerProfileSheet } from "@/components/user/home/TelecallerProfileSheet";
 import { TelecallerListSkeleton } from "@/components/user/skeleton/TelecallerCardSkeleton";
 import { API_CONFIG } from "@/config/api";
+import useErrorHandler from "@/hooks/useErrorHandler";
 import apiClient from "@/services/api.service";
 import { TelecallerListItem } from "@/types/user";
+import { showToast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, RefreshControl, ScrollView, Text, View } from "react-native";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -20,6 +22,7 @@ type TelecallersResponse = {
 };
 
 export default function Home() {
+  const { handleError } = useErrorHandler();
   const [telecallers, setTelecallers] = useState<TelecallerListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -46,10 +49,9 @@ export default function Home() {
       setPage(pageNumber + 1);
       setHasMore(data.data.hasMore);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to fetch telecallers";
-      Alert.alert("Error", message);
+      handleError(error, "Failed to fetch telecallers");
     }
-  }, []);
+  }, [handleError]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -94,6 +96,7 @@ export default function Home() {
         await apiClient.post(`${API_CONFIG.ENDPOINTS.ADD_FAVORITE}/${telecaller._id}`);
       }
 
+      showToast('Favorite list updated.');
       // Update telecallers list on success
       setTelecallers((prev) => prev.map((item) => item._id === telecaller._id ? { ...item, isFavorite: !isFavorite } : item));
       // Update selected telecaller if sheet is open
@@ -102,8 +105,7 @@ export default function Home() {
       };
 
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update favorite";
-      Alert.alert("Error", message);
+      handleError(error, "Failed to update favorite");
     } finally {
       setIsFavoriteLoading(false);
     }

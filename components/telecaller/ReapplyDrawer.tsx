@@ -4,9 +4,11 @@ import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { API_CONFIG } from "@/config/api";
 import { useAuth } from "@/context/AuthContext";
+import useErrorHandler from "@/hooks/useErrorHandler";
 import { ReapplyFormData, reapplySchema } from "@/schemas/auth.schema";
 import apiClient from "@/services/api.service";
 import { IAuthUser } from "@/types/general";
+import { showToast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -34,6 +36,7 @@ export interface IReapplyAPIResponse {
 
 export const ReapplyDrawer: React.FC<ReapplyDrawerProps> = ({ visible, onClose, onSuccess, initialData }) => {
   const { updateUser } = useAuth();
+  const { handleError } = useErrorHandler();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
@@ -107,10 +110,11 @@ export const ReapplyDrawer: React.FC<ReapplyDrawerProps> = ({ visible, onClose, 
 
       const response = await apiClient.patch<IReapplyAPIResponse>(API_CONFIG.ENDPOINTS.RE_APPLY_APPLICATION, payload);
       await updateUser(response.data.data);
+      showToast(response.data.message);
 
       onSuccess();
     } catch (error) {
-      console.log(error);
+      handleError(error, "Failed to re-apply your application.");
     } finally {
       setIsSubmitting(false);
     }

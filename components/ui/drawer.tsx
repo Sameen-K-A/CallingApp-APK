@@ -1,5 +1,7 @@
+import { toastConfig } from "@/utils/toast";
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Animated, Dimensions, Easing, Modal, PanResponder, Pressable, ScrollView, Text, View } from "react-native";
+import Toast from "react-native-toast-message";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const MAX_HEIGHT = SCREEN_HEIGHT * 0.7;
@@ -166,6 +168,9 @@ const DrawerRoot: React.FC<DrawerProps> = ({ visible, onClose, children }) => {
 
           {children}
         </Animated.View>
+
+        {/* Toast inside Modal - appears above everything */}
+        <Toast config={toastConfig} />
       </Modal>
     </DrawerContext.Provider>
   );

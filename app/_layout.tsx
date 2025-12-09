@@ -1,9 +1,11 @@
 import { AuthProvider } from "@/context/AuthContext";
+import { toastConfig } from "@/utils/toast";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import Toast from 'react-native-toast-message';
 import "./global.css";
 
 SplashScreen.preventAutoHideAsync();
@@ -35,6 +37,7 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(app)" />
         </Stack>
+        <Toast config={toastConfig} />
       </SafeAreaProvider>
     </AuthProvider>
   );

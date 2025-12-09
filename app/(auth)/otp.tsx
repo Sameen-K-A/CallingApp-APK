@@ -6,11 +6,12 @@ import { useAuth } from "@/context/AuthContext";
 import { OTPFormData, otpSchema } from "@/schemas/auth.schema";
 import apiClient from "@/services/api.service";
 import { IVerifyOTPResponse } from "@/types/api";
+import { showToast } from "@/utils/toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { ActivityIndicator, Alert, Keyboard, Text, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import { ActivityIndicator, Keyboard, Text, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OTPScreen() {
@@ -66,7 +67,6 @@ export default function OTPScreen() {
       await login(response.token, response.user);
       router.replace("/(app)/(user)/home");
     } catch (error: any) {
-      console.log("❌ Error from verify OTP:", error);
       setError("otp", {
         type: "manual",
         message: error.message || "Invalid or expired OTP. Please try again.",
@@ -87,8 +87,7 @@ export default function OTPScreen() {
       await apiClient.post(API_CONFIG.ENDPOINTS.RESEND_OTP, {
         phone: phoneNumber,
       });
-
-      Alert.alert("Success", `A new OTP has been sent to ${phoneNumber}.`);
+      showToast(`A new OTP has been sent to ${phoneNumber}.`)
       setTimer(300);
       setCanResend(false);
     } catch (error: any) {

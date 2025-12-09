@@ -9,6 +9,7 @@ import useErrorHandler from "@/hooks/useErrorHandler";
 import { EditUserProfileFormData, editUserProfileSchema } from "@/schemas/user.schema";
 import apiClient from "@/services/api.service";
 import { IEditProfilePayload, IEditProfileResponse } from "@/types/api";
+import { showToast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
@@ -96,6 +97,7 @@ export default function Account() {
       const response = await apiClient.patch<IEditProfileResponse>(API_CONFIG.ENDPOINTS.EDIT_PROFILE, changedFields);
       await updateUser(response.data.data);
       setIsEditMode(false);
+      showToast(response.data.message);
     } catch (error: any) {
       handleError(error, "Failed to save changes.");
     } finally {

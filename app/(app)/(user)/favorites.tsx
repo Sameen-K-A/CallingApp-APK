@@ -2,11 +2,13 @@ import { EmptyFavoritesState } from "@/components/user/favorites/EmptyFavoritesS
 import { FavoriteTelecallerCard } from "@/components/user/favorites/FavoriteTelecallerCard";
 import { TelecallerListSkeleton } from "@/components/user/skeleton/TelecallerCardSkeleton";
 import { API_CONFIG } from "@/config/api";
+import useErrorHandler from "@/hooks/useErrorHandler";
 import apiClient from "@/services/api.service";
 import { TelecallerListItem } from "@/types/user";
+import { showToast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Platform, RefreshControl, ScrollView, Text, UIManager, View } from "react-native";
+import { ActivityIndicator, FlatList, Platform, RefreshControl, ScrollView, Text, UIManager, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -24,6 +26,7 @@ type FavoritesResponse = {
 };
 
 export default function Favorites() {
+  const { handleError } = useErrorHandler();
   const [favorites, setFavorites] = useState<TelecallerListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -45,10 +48,9 @@ export default function Favorites() {
       setPage(pageNumber + 1);
       setHasMore(data.data.hasMore);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to fetch favorites";
-      Alert.alert("Error", message);
+      handleError(error, "Failed to collect your favorites telecallers");
     }
-  }, []);
+  }, [handleError]);
 
   // Initial load
   const handleInitialLoad = useCallback(async () => {
@@ -86,12 +88,12 @@ export default function Favorites() {
 
     try {
       await apiClient.delete(`${API_CONFIG.ENDPOINTS.REMOVE_FAVORITE}/${telecaller._id}`);
+      showToast(`${telecaller.name} removed from favorite list`);
     } catch (error) {
       setFavorites((prev) => [...prev, telecaller]);
-      const message = error instanceof Error ? error.message : "Failed to remove from favorites";
-      Alert.alert("Error", message);
+      handleError(error, "Failed to remove from favorites");
     }
-  }, []);
+  }, [handleError]);
 
   // Card swipe handlers
   const handleCardOpen = useCallback((id: string) => {

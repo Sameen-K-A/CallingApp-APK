@@ -5,18 +5,21 @@ import { AuroraBackground } from "@/components/ui/aurora-background";
 import { Button, ButtonText } from "@/components/ui/button";
 import { API_CONFIG } from "@/config/api";
 import { useAuth } from "@/context/AuthContext";
+import useErrorHandler from "@/hooks/useErrorHandler";
 import { ProfileFormData, profileSchema } from "@/schemas/auth.schema";
 import apiClient from "@/services/api.service";
 import { ICompleteProfilePayload, ICompleteProfileResponse } from "@/types/api";
+import { showToast } from "@/utils/toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { ActivityIndicator, Alert, Keyboard, Text, TouchableWithoutFeedback, View } from "react-native";
+import { ActivityIndicator, Keyboard, Text, TouchableWithoutFeedback, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileSetupScreen() {
   const router = useRouter();
+  const { handleError } = useErrorHandler();
   const { updateUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -108,6 +111,7 @@ export default function ProfileSetupScreen() {
       const apiPayload = transformToApiPayload(data);
       const { data: response } = await apiClient.patch<ICompleteProfileResponse>(API_CONFIG.ENDPOINTS.COMPLETE_PROFILE, apiPayload);
       await updateUser(response.data);
+      showToast(response.message);
 
       if (data.wantsToBeTelecaller) {
         router.replace("/(app)/(telecaller)/pending");
@@ -115,8 +119,7 @@ export default function ProfileSetupScreen() {
         router.replace("/(app)/(user)/home");
       }
     } catch (error) {
-      console.log("Profile completion error:", error);
-      Alert.alert("Error", "Failed to complete profile. Please try again.");
+      handleError(error, "Failed to complete profile. Please try again.")
     } finally {
       setIsLoading(false);
     }

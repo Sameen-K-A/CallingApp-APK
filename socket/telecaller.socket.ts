@@ -1,5 +1,5 @@
 import { API_CONFIG } from '@/config/api';
-import { Alert } from 'react-native';
+import { showToast } from '@/utils/toast';
 import { io, Socket } from 'socket.io-client';
 import { ClientEvents, ServerEvents } from './types';
 
@@ -41,7 +41,7 @@ export const connectTelecallerSocket = (token: string): TelecallerSocket => {
   });
 
   socket.on('error', (data) => {
-    Alert.alert('Connection Error', data.message);
+    showToast(data.message)
   });
 
   return socket;

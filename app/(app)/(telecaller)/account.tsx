@@ -10,6 +10,7 @@ import useErrorHandler from "@/hooks/useErrorHandler";
 import { EditTelecallerProfileFormData, editTelecallerProfileSchema } from "@/schemas/telecaller.schema";
 import apiClient from "@/services/api.service";
 import { IEditProfilePayload, IEditProfileResponse } from "@/types/api";
+import { showToast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
@@ -104,6 +105,7 @@ export default function Account() {
     try {
       const response = await apiClient.patch<IEditProfileResponse>(API_CONFIG.ENDPOINTS.TELE_EDIT_PROFILE, changedFields);
       await updateUser(response.data.data);
+      showToast(response.data.message);
       setIsEditMode(false);
     } catch (error: any) {
       handleError(error, "Failed to save changes.");
