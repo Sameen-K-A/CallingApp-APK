@@ -118,7 +118,8 @@ export default function Home() {
     return () => {
       unsubscribe();
     };
-  }, [selectedTelecaller?._id, isInitialFetchDone]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTelecaller?._id, isInitialFetchDone.current]);
 
   const handleLoadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;

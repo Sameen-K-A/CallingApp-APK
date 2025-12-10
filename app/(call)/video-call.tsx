@@ -1,10 +1,13 @@
 import { ConnectingState } from "@/components/call/ConnectingState";
 import { VideoConnectedState } from "@/components/call/VideoConnectedState";
 import { useCallTimer } from "@/hooks/useCallTimer";
+import { CallErrorPayload, CallRingingPayload } from "@/socket/types";
+import { emitCallInitiate, isUserSocketConnected, onCallError, onCallRinging } from "@/socket/user.socket";
+import { showErrorToast } from "@/utils/toast";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -21,24 +24,54 @@ export default function VideoCall() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<CallParams>();
 
-  const [callState, setCallState] = useState<CallState>("CONNECTING");
+  const [callState] = useState<CallState>("CONNECTING");
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [isRemoteCameraOff] = useState(false);
 
-  const { seconds, formatted, start, stop } = useCallTimer();
-
+  const { seconds, formatted, stop } = useCallTimer();
   const { telecallerId, telecallerName, telecallerProfile } = params;
 
+  const callIdRef = useRef<string | null>(null);
+  const hasInitiatedRef = useRef(false);
+
+  const isAndroid = Platform.OS === "android";
+
   useEffect(() => {
-    const connectionTimer = setTimeout(() => {
-      setCallState("CONNECTED");
-      start();
-    }, 2000);
+    // Prevent double initiation
+    if (hasInitiatedRef.current) return;
+    hasInitiatedRef.current = true;
+
+    // Check socket connection
+    if (!isUserSocketConnected()) {
+      showErrorToast("Connection issue. Please restart the application.");
+      router.replace("/(app)/(user)/home");
+      return;
+    }
+
+    // Subscribe to call events
+    const unsubscribeRinging = onCallRinging((data: CallRingingPayload) => {
+      callIdRef.current = data.callId;
+    });
+
+    const unsubscribeError = onCallError((data: CallErrorPayload) => {
+      showErrorToast(data.message);
+      router.replace("/(app)/(user)/home");
+    });
+
+    // Initiate the call
+    const success = emitCallInitiate({ telecallerId, callType: "VIDEO", });
+
+    if (!success) {
+      showErrorToast("Connection issue. Please restart the application.");
+      router.replace("/(app)/(user)/home");
+      return;
+    }
 
     return () => {
-      clearTimeout(connectionTimer);
+      unsubscribeRinging();
+      unsubscribeError();
       stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,8 +108,6 @@ export default function VideoCall() {
       },
     });
   };
-
-  const isAndroid = Platform.OS === "android";
 
   return (
     <>

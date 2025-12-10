@@ -1,9 +1,16 @@
 import { API_CONFIG } from '@/config/api';
 import { showToast } from '@/utils/toast';
 import { io, Socket } from 'socket.io-client';
-import { ClientEvents, ServerEvents, TelecallerPresencePayload } from './types';
+import {
+  CallErrorPayload,
+  CallInitiatePayload,
+  CallRingingPayload,
+  TelecallerPresencePayload,
+  UserClientEvents,
+  UserServerEvents
+} from './types';
 
-type UserSocket = Socket<ServerEvents, ClientEvents>;
+type UserSocket = Socket<UserServerEvents, UserClientEvents>;
 
 let socket: UserSocket | null = null;
 let isManuallyDisconnected = false;
@@ -74,5 +81,43 @@ export const onTelecallerPresenceChanged = (callback: (data: TelecallerPresenceP
   // Return cleanup function
   return () => {
     socket?.off('telecaller:presence-changed', callback);
+  };
+};
+
+// Call Event Emitters
+export const emitCallInitiate = (payload: CallInitiatePayload): boolean => {
+  if (!socket?.connected) {
+    console.log('👤 ⚠️ Cannot initiate call: socket not connected');
+    return false;
+  }
+
+  socket.emit('call:initiate', payload);
+  return true;
+};
+
+// Call Event Listeners
+export const onCallRinging = (callback: (data: CallRingingPayload) => void): (() => void) => {
+  if (!socket) {
+    console.log('👤 ⚠️ Cannot subscribe to call:ringing: socket not connected');
+    return () => { };
+  }
+
+  socket.on('call:ringing', callback);
+
+  return () => {
+    socket?.off('call:ringing', callback);
+  };
+};
+
+export const onCallError = (callback: (data: CallErrorPayload) => void): (() => void) => {
+  if (!socket) {
+    console.log('👤 ⚠️ Cannot subscribe to call:error: socket not connected');
+    return () => { };
+  }
+
+  socket.on('call:error', callback);
+
+  return () => {
+    socket?.off('call:error', callback);
   };
 };

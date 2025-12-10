@@ -1,3 +1,7 @@
+export interface SocketError {
+  message: string;
+};
+
 export interface TelecallerBroadcastData {    // Telecaller Broadcast Data (received when telecaller comes online)
   _id: string;
   name: string;
@@ -12,17 +16,67 @@ export interface TelecallerPresencePayload {   // Presence Change Payload
   telecaller: TelecallerBroadcastData | null;
 };
 
-export interface SocketError {
+// Call Related Types
+// ============================================
+export interface CallParticipant {
+  _id: string;
+  name: string;
+  profile: string | null;
+};
+
+// User emits to initiate a call
+export interface CallInitiatePayload {
+  telecallerId: string;
+  callType: 'AUDIO' | 'VIDEO';
+};
+
+// User receives when call is ringing
+export interface CallRingingPayload {
+  callId: string;
+  telecaller: CallParticipant;
+};
+
+// User receives when call initiation fails
+export interface CallErrorPayload {
   message: string;
 };
 
-// Server → Client Events ( same for both namespaces )
-export interface ServerEvents {
-  error: (data: SocketError) => void;
-  'telecaller:presence-changed': (data: TelecallerPresencePayload) => void;
+// Telecaller receives for incoming call
+export interface CallIncomingPayload {
+  callId: string;
+  callType: 'AUDIO' | 'VIDEO';
+  caller: CallParticipant;
 };
 
-// Client → Server Events ( same for both namespaces )
-export interface ClientEvents {
+
+// ============================================
+// Server → Client Events (User)
+// ============================================
+export interface UserServerEvents {
+  error: (data: SocketError) => void;
+  'telecaller:presence-changed': (data: TelecallerPresencePayload) => void;
+  'call:ringing': (data: CallRingingPayload) => void;
+  'call:error': (data: CallErrorPayload) => void;
+};
+
+// ============================================
+// Client → Server Events (User)
+// ============================================
+export interface UserClientEvents {
+  'call:initiate': (data: CallInitiatePayload) => void;
+};
+
+// ============================================
+// Server → Client Events (Telecaller)
+// ============================================
+export interface TelecallerServerEvents {
+  error: (data: SocketError) => void;
+  'call:incoming': (data: CallIncomingPayload) => void;
+};
+
+// ============================================
+// Client → Server Events (Telecaller)
+// ============================================
+export interface TelecallerClientEvents {
 
 };

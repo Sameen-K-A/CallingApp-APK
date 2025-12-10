@@ -1,12 +1,13 @@
 import { API_CONFIG } from '@/config/api';
 import { showToast } from '@/utils/toast';
 import { io, Socket } from 'socket.io-client';
-import { ClientEvents, ServerEvents } from './types';
+import { CallIncomingPayload, TelecallerClientEvents, TelecallerServerEvents } from './types';
 
-type TelecallerSocket = Socket<ServerEvents, ClientEvents>;
+type TelecallerSocket = Socket<TelecallerServerEvents, TelecallerClientEvents>;
 
 let socket: TelecallerSocket | null = null;
 let isManuallyDisconnected = false;
+let onSocketReadyCallback: (() => void) | null = null;
 
 export const connectTelecallerSocket = (token: string): TelecallerSocket => {
   if (socket?.connected) {
@@ -30,6 +31,9 @@ export const connectTelecallerSocket = (token: string): TelecallerSocket => {
 
   socket.on('connect', () => {
     console.log('📞 ✅ Telecaller socket connected:', socket?.id);
+    if (onSocketReadyCallback) {
+      onSocketReadyCallback();
+    }
   });
 
   socket.on('disconnect', (reason) => {
@@ -60,3 +64,23 @@ export const getTelecallerSocket = (): TelecallerSocket | null => socket;
 export const isTelecallerSocketConnected = (): boolean => socket?.connected ?? false;
 
 export const isTelecallerSocketManuallyDisconnected = (): boolean => isManuallyDisconnected;
+
+export const setOnSocketReady = (callback: (() => void) | null): void => {
+  onSocketReadyCallback = callback;
+  if (socket?.connected && callback) {
+    callback();
+  }
+};
+
+export const onCallIncoming = (callback: (data: CallIncomingPayload) => void): (() => void) => {
+  if (!socket) {
+    console.log('📞 ⚠️ Cannot subscribe to call:incoming: socket is null');
+    return () => { };
+  }
+
+  socket.on('call:incoming', callback);
+
+  return () => {
+    socket?.off('call:incoming', callback);
+  };
+};
