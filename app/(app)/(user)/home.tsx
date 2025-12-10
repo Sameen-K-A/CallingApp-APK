@@ -5,10 +5,12 @@ import { TelecallerListSkeleton } from "@/components/user/skeleton/TelecallerCar
 import { API_CONFIG } from "@/config/api";
 import useErrorHandler from "@/hooks/useErrorHandler";
 import apiClient from "@/services/api.service";
+import { TelecallerPresencePayload } from "@/socket/types";
+import { onTelecallerPresenceChanged } from "@/socket/user.socket";
 import { TelecallerListItem } from "@/types/user";
 import { showToast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, ScrollView, Text, View } from "react-native";
 
 const ITEMS_PER_PAGE = 15;
@@ -34,6 +36,8 @@ export default function Home() {
   const [selectedTelecaller, setSelectedTelecaller] = useState<TelecallerListItem | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
 
+  const isInitialFetchDone = useRef(false);
+
   const fetchTelecallers = useCallback(async (pageNumber: number, isRefresh = false) => {
     try {
       const { data } = await apiClient.get<TelecallersResponse>(
@@ -53,11 +57,68 @@ export default function Home() {
     }
   }, [handleError]);
 
+  // Initial fetch
   useEffect(() => {
     setIsLoading(true);
-    fetchTelecallers(1).finally(() => setIsLoading(false));
+    fetchTelecallers(1).finally(() => {
+      setIsLoading(false);
+      isInitialFetchDone.current = true;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Subscribe to real-time presence changes
+  useEffect(() => {
+    if (!isInitialFetchDone.current) return;
+
+    const unsubscribe = onTelecallerPresenceChanged((data: TelecallerPresencePayload) => {
+      console.log('📡 Presence changed:', data.telecallerId, '->', data.presence);
+
+      setTelecallers((prev) => {
+        const exists = prev.some((t) => t._id === data.telecallerId);
+
+        if (data.presence === 'ONLINE') {
+          if (exists) {
+            return prev.map((t) => t._id === data.telecallerId ? { ...t, presence: 'ONLINE' } : t);
+          } else if (data.telecaller) {
+            const newTelecaller: TelecallerListItem = {
+              _id: data.telecaller._id,
+              name: data.telecaller.name,
+              profile: data.telecaller.profile,
+              language: data.telecaller.language,
+              about: data.telecaller.about,
+              presence: 'ONLINE',
+              isFavorite: false,
+            };
+            return [newTelecaller, ...prev];
+          }
+        };
+
+        if (data.presence === 'OFFLINE') {
+          if (exists) {
+            return prev.map((t) => t._id === data.telecallerId ? { ...t, presence: 'OFFLINE' } : t);
+          }
+        };
+
+        if (data.presence === 'ON_CALL') {
+          if (exists) {
+            return prev.map((t) => t._id === data.telecallerId ? { ...t, presence: 'ON_CALL' } : t);
+          }
+        }
+
+        return prev;
+      });
+
+      // Also update selected telecaller if sheet is open
+      if (selectedTelecaller?._id === data.telecallerId) {
+        setSelectedTelecaller((prev) => prev ? { ...prev, presence: data.presence } : null);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [selectedTelecaller?._id, isInitialFetchDone]);
 
   const handleLoadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;

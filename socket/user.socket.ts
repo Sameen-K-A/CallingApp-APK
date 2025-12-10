@@ -1,7 +1,7 @@
 import { API_CONFIG } from '@/config/api';
 import { showToast } from '@/utils/toast';
 import { io, Socket } from 'socket.io-client';
-import { ClientEvents, ServerEvents } from './types';
+import { ClientEvents, ServerEvents, TelecallerPresencePayload } from './types';
 
 type UserSocket = Socket<ServerEvents, ClientEvents>;
 
@@ -60,3 +60,19 @@ export const getUserSocket = (): UserSocket | null => socket;
 export const isUserSocketConnected = (): boolean => socket?.connected ?? false;
 
 export const isUserSocketManuallyDisconnected = (): boolean => isManuallyDisconnected;
+
+
+// Telecaller Presence Change Listener
+export const onTelecallerPresenceChanged = (callback: (data: TelecallerPresencePayload) => void): (() => void) => {
+  if (!socket) {
+    console.log('👤 ⚠️ Cannot subscribe to presence changes: socket not connected');
+    return () => { };
+  }
+
+  socket.on('telecaller:presence-changed', callback);
+
+  // Return cleanup function
+  return () => {
+    socket?.off('telecaller:presence-changed', callback);
+  };
+};
