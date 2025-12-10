@@ -1,7 +1,14 @@
 import { API_CONFIG } from '@/config/api';
 import { showToast } from '@/utils/toast';
 import { io, Socket } from 'socket.io-client';
-import { CallIncomingPayload, TelecallerClientEvents, TelecallerServerEvents } from './types';
+import {
+  CallAcceptPayload,
+  CallIncomingPayload,
+  CallRejectPayload,
+  TelecallerCallAcceptedPayload,
+  TelecallerClientEvents,
+  TelecallerServerEvents
+} from './types';
 
 type TelecallerSocket = Socket<TelecallerServerEvents, TelecallerClientEvents>;
 
@@ -72,6 +79,11 @@ export const setOnSocketReady = (callback: (() => void) | null): void => {
   }
 };
 
+
+// ============================================
+// Call Event Listeners
+// ============================================
+
 export const onCallIncoming = (callback: (data: CallIncomingPayload) => void): (() => void) => {
   if (!socket) {
     console.log('📞 ⚠️ Cannot subscribe to call:incoming: socket is null');
@@ -83,4 +95,43 @@ export const onCallIncoming = (callback: (data: CallIncomingPayload) => void): (
   return () => {
     socket?.off('call:incoming', callback);
   };
+};
+
+export const onCallAccepted = (callback: (data: TelecallerCallAcceptedPayload) => void): (() => void) => {
+  if (!socket) {
+    console.log('📞 ⚠️ Cannot subscribe to call:accepted: socket is null');
+    return () => { };
+  }
+
+  socket.on('call:accepted', callback);
+
+  return () => {
+    socket?.off('call:accepted', callback);
+  };
+};
+
+
+
+// ============================================
+// Call Event Emitters
+// ============================================
+
+export const emitCallAccept = (payload: CallAcceptPayload): boolean => {
+  if (!socket?.connected) {
+    console.log('📞 ⚠️ Cannot accept call: socket not connected');
+    return false;
+  }
+
+  socket.emit('call:accept', payload);
+  return true;
+};
+
+export const emitCallReject = (payload: CallRejectPayload): boolean => {
+  if (!socket?.connected) {
+    console.log('📞 ⚠️ Cannot reject call: socket not connected');
+    return false;
+  }
+
+  socket.emit('call:reject', payload);
+  return true;
 };

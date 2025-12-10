@@ -2,12 +2,14 @@ import { API_CONFIG } from '@/config/api';
 import { showToast } from '@/utils/toast';
 import { io, Socket } from 'socket.io-client';
 import {
+  CallAcceptedPayload,
   CallErrorPayload,
   CallInitiatePayload,
+  CallRejectedPayload,
   CallRingingPayload,
   TelecallerPresencePayload,
   UserClientEvents,
-  UserServerEvents
+  UserServerEvents,
 } from './types';
 
 type UserSocket = Socket<UserServerEvents, UserClientEvents>;
@@ -119,5 +121,31 @@ export const onCallError = (callback: (data: CallErrorPayload) => void): (() => 
 
   return () => {
     socket?.off('call:error', callback);
+  };
+};
+
+export const onCallAccepted = (callback: (data: CallAcceptedPayload) => void): (() => void) => {
+  if (!socket) {
+    console.log('👤 ⚠️ Cannot subscribe to call:accepted: socket not connected');
+    return () => { };
+  }
+
+  socket.on('call:accepted', callback);
+
+  return () => {
+    socket?.off('call:accepted', callback);
+  };
+};
+
+export const onCallRejected = (callback: (data: CallRejectedPayload) => void): (() => void) => {
+  if (!socket) {
+    console.log('👤 ⚠️ Cannot subscribe to call:rejected: socket not connected');
+    return () => { };
+  }
+
+  socket.on('call:rejected', callback);
+
+  return () => {
+    socket?.off('call:rejected', callback);
   };
 };

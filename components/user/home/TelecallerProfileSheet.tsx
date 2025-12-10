@@ -53,10 +53,11 @@ export const TelecallerProfileSheet: React.FC<TelecallerProfileSheetProps> = ({
       router.replace({
         pathname: "/(app)/(call)/audio-call",
         params: {
-          telecallerId: telecaller._id,
-          telecallerName: telecaller.name,
-          telecallerProfile: telecaller.profile || "",
+          participantId: telecaller._id,
+          participantName: telecaller.name,
+          participantProfile: telecaller.profile || "",
           callType: "AUDIO",
+          role: "USER",
         },
       });
     }, 300);
@@ -68,9 +69,11 @@ export const TelecallerProfileSheet: React.FC<TelecallerProfileSheetProps> = ({
       router.replace({
         pathname: "/(app)/(call)/video-call",
         params: {
-          telecallerId: telecaller._id,
-          telecallerName: telecaller.name,
-          telecallerProfile: telecaller.profile || "",
+          participantId: telecaller._id,
+          participantName: telecaller.name,
+          participantProfile: telecaller.profile || "",
+          callType: "VIDEO",
+          role: "USER",
         },
       });
     }, 300);

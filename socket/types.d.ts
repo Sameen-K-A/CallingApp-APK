@@ -2,7 +2,10 @@ export interface SocketError {
   message: string;
 };
 
-export interface TelecallerBroadcastData {    // Telecaller Broadcast Data (received when telecaller comes online)
+// ============================================
+// Telecaller Broadcast Data (received when telecaller comes online)
+// ============================================
+export interface TelecallerBroadcastData {
   _id: string;
   name: string;
   profile: string | null;
@@ -10,13 +13,17 @@ export interface TelecallerBroadcastData {    // Telecaller Broadcast Data (rece
   about: string;
 };
 
-export interface TelecallerPresencePayload {   // Presence Change Payload
+// ============================================
+// Presence Change Payload
+// ============================================
+export interface TelecallerPresencePayload {
   telecallerId: string;
   presence: 'ONLINE' | 'OFFLINE' | 'ON_CALL';
   telecaller: TelecallerBroadcastData | null;
 };
 
-// Call Related Types
+// ============================================
+// Call Participant (generic for both user and telecaller)
 // ============================================
 export interface CallParticipant {
   _id: string;
@@ -24,59 +31,76 @@ export interface CallParticipant {
   profile: string | null;
 };
 
-// User emits to initiate a call
+// ============================================
+// User Socket Events
+// ============================================
+
 export interface CallInitiatePayload {
   telecallerId: string;
   callType: 'AUDIO' | 'VIDEO';
 };
 
-// User receives when call is ringing
 export interface CallRingingPayload {
   callId: string;
   telecaller: CallParticipant;
 };
 
-// User receives when call initiation fails
 export interface CallErrorPayload {
   message: string;
 };
 
-// Telecaller receives for incoming call
+export interface CallAcceptedPayload {
+  callId: string;
+};
+
+export interface CallRejectedPayload {
+  callId: string;
+};
+
+export interface UserServerEvents {
+  error: (data: SocketError) => void;
+  'telecaller:presence-changed': (data: TelecallerPresencePayload) => void;
+  'call:ringing': (data: CallRingingPayload) => void;
+  'call:error': (data: CallErrorPayload) => void;
+  'call:accepted': (data: CallAcceptedPayload) => void;
+  'call:rejected': (data: CallRejectedPayload) => void;
+};
+
+export interface UserClientEvents {
+  'call:initiate': (data: CallInitiatePayload) => void;
+};
+
+// ============================================
+// Telecaller Socket Events
+// ============================================
+
 export interface CallIncomingPayload {
   callId: string;
   callType: 'AUDIO' | 'VIDEO';
   caller: CallParticipant;
 };
 
-
-// ============================================
-// Server → Client Events (User)
-// ============================================
-export interface UserServerEvents {
-  error: (data: SocketError) => void;
-  'telecaller:presence-changed': (data: TelecallerPresencePayload) => void;
-  'call:ringing': (data: CallRingingPayload) => void;
-  'call:error': (data: CallErrorPayload) => void;
+export interface CallAcceptPayload {
+  callId: string;
 };
 
-// ============================================
-// Client → Server Events (User)
-// ============================================
-export interface UserClientEvents {
-  'call:initiate': (data: CallInitiatePayload) => void;
+export interface CallRejectPayload {
+  callId: string;
 };
 
-// ============================================
-// Server → Client Events (Telecaller)
-// ============================================
+export interface TelecallerCallAcceptedPayload {
+  callId: string;
+  callType: 'AUDIO' | 'VIDEO';
+  caller: CallParticipant;
+};
+
 export interface TelecallerServerEvents {
   error: (data: SocketError) => void;
   'call:incoming': (data: CallIncomingPayload) => void;
+  'call:accepted': (data: TelecallerCallAcceptedPayload) => void;
 };
 
-// ============================================
-// Client → Server Events (Telecaller)
-// ============================================
 export interface TelecallerClientEvents {
-
+  'call:accept': (data: CallAcceptPayload) => void;
+  'call:reject': (data: CallRejectPayload) => void;
 };

@@ -1,7 +1,5 @@
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { Button, ButtonText } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
-import { ICallType } from "@/types/user";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -9,17 +7,18 @@ import { ActivityIndicator, Keyboard, Text, TextInput, TouchableWithoutFeedback,
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface FeedbackParams extends Record<string, string | string[]> {
-  telecallerId: string;
-  telecallerName: string;
-  telecallerProfile: string;
+  callId: string;
+  participantId: string;
+  participantName: string;
+  participantProfile: string;
   duration: string;
-  callType: ICallType;
-  role: "USER" | "TELECALLER";
+  callType: string;
+  role: string;
+  homeRoute: string;
 }
 
 export default function Feedback() {
   const router = useRouter();
-  const { isTelecaller } = useAuth();
   const params = useLocalSearchParams<FeedbackParams>();
 
   const [feedback, setFeedback] = useState("");
@@ -32,11 +31,11 @@ export default function Feedback() {
     setIsSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    if (role === "TELECALLER" || isTelecaller()) {
-      router.replace("/(app)/(telecaller)/dashboard");
-    } else {
-      router.replace("/(app)/(user)/home");
-    }
+    const defaultHome = role === "TELECALLER"
+      ? "/(app)/(telecaller)/dashboard"
+      : "/(app)/(user)/home";
+
+    router.replace(defaultHome);
   };
 
   return (

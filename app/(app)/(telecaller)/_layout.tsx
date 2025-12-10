@@ -3,9 +3,16 @@ import { Loading } from "@/components/shared/Loading";
 import { Header } from "@/components/telecaller/Header";
 import { TabBar } from "@/components/telecaller/TabBar";
 import { useAuth } from "@/context/AuthContext";
-import { getTelecallerSocket, isTelecallerSocketConnected, setOnSocketReady } from "@/socket/telecaller.socket";
-import { CallIncomingPayload } from "@/socket/types";
-import { Redirect, Slot } from "expo-router";
+import {
+  emitCallAccept,
+  emitCallReject,
+  getTelecallerSocket,
+  isTelecallerSocketConnected,
+  setOnSocketReady
+} from "@/socket/telecaller.socket";
+import { CallIncomingPayload, TelecallerCallAcceptedPayload } from "@/socket/types";
+import { showErrorToast } from "@/utils/toast";
+import { Redirect, router, Slot } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
 
@@ -51,24 +58,62 @@ export default function TelecallerLayout() {
       });
     };
 
+    const handleCallAccepted = (data: TelecallerCallAcceptedPayload) => {
+      console.log('📞 Call accepted confirmation received:', data);
+
+      setIncomingCall(null);
+
+      const route = data.callType === 'VIDEO'
+        ? '/(app)/(call)/video-call'
+        : '/(app)/(call)/audio-call';
+
+      router.replace({
+        pathname: route,
+        params: {
+          callId: data.callId,
+          participantId: data.caller._id,
+          participantName: data.caller.name,
+          participantProfile: data.caller.profile || '',
+          callType: data.callType,
+          role: 'TELECALLER'
+        }
+      });
+    };
+
     socket.on('call:incoming', handleIncomingCall);
+    socket.on('call:accepted', handleCallAccepted);
 
     return () => {
+      console.log('📞 Cleaning up call subscriptions');
       socket.off('call:incoming', handleIncomingCall);
+      socket.off('call:accepted', handleCallAccepted);
     };
-  }, [getTelecallerApprovalStatus, socketReady]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getTelecallerApprovalStatus, socketReady, router]);
 
+  // ========================================= Handle accept call ====================================
   const handleAcceptCall = () => {
     if (!incomingCall) return;
-    console.log('📞 Accepting call:', incomingCall.callId);
+
+    const success = emitCallAccept({ callId: incomingCall.callId });
+    if (!success) {
+      showErrorToast('Connection issue. Please try again.');
+      setIncomingCall(null);
+    }
+  };
+
+  // ========================================= Handle reject call ====================================
+  const handleRejectCall = () => {
+    if (!incomingCall) return;
+
+    const success = emitCallReject({ callId: incomingCall.callId });
+    if (!success) {
+      showErrorToast('Connection issue. Please try again.');
+    }
     setIncomingCall(null);
   };
 
-  const handleRejectCall = () => {
-    if (!incomingCall) return;
-    console.log('📞 Rejecting call:', incomingCall.callId);
-    setIncomingCall(null);
-  };
+  // ====================================== rendering ===========================================
 
   if (isLoading) {
     return <Loading />;
