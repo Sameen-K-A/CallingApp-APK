@@ -51,7 +51,7 @@ export const TelecallerProfileSheet: React.FC<TelecallerProfileSheetProps> = ({
     onClose();
     setTimeout(() => {
       router.replace({
-        pathname: "/(call)/audio-call",
+        pathname: "/(app)/(call)/audio-call",
         params: {
           telecallerId: telecaller._id,
           telecallerName: telecaller.name,
@@ -66,7 +66,7 @@ export const TelecallerProfileSheet: React.FC<TelecallerProfileSheetProps> = ({
     onClose();
     setTimeout(() => {
       router.replace({
-        pathname: "/(call)/video-call",
+        pathname: "/(app)/(call)/video-call",
         params: {
           telecallerId: telecaller._id,
           telecallerName: telecaller.name,

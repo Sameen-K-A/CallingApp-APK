@@ -91,7 +91,7 @@ export default function AudioCall() {
   const handleEndCall = () => {
     stop();
     router.replace({
-      pathname: "/(call)/feedback",
+      pathname: "/(app)/(call)/feedback",
       params: {
         telecallerId,
         telecallerName,
