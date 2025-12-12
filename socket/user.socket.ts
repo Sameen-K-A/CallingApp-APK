@@ -3,13 +3,15 @@ import { showToast } from '@/utils/toast';
 import { io, Socket } from 'socket.io-client';
 import {
   CallAcceptedPayload,
+  CallCancelPayload,
   CallErrorPayload,
   CallInitiatePayload,
+  CallMissedPayload,
   CallRejectedPayload,
   CallRingingPayload,
   TelecallerPresencePayload,
   UserClientEvents,
-  UserServerEvents,
+  UserServerEvents
 } from './types';
 
 type UserSocket = Socket<UserServerEvents, UserClientEvents>;
@@ -97,6 +99,16 @@ export const emitCallInitiate = (payload: CallInitiatePayload): boolean => {
   return true;
 };
 
+export const emitCallCancel = (payload: CallCancelPayload): boolean => {
+  if (!socket?.connected) {
+    console.log('👤 ⚠️ Cannot cancel call: socket not connected');
+    return false;
+  }
+
+  socket.emit('call:cancel', payload);
+  return true;
+};
+
 // Call Event Listeners
 export const onCallRinging = (callback: (data: CallRingingPayload) => void): (() => void) => {
   if (!socket) {
@@ -147,5 +159,18 @@ export const onCallRejected = (callback: (data: CallRejectedPayload) => void): (
 
   return () => {
     socket?.off('call:rejected', callback);
+  };
+};
+
+export const onCallMissed = (callback: (data: CallMissedPayload) => void): (() => void) => {
+  if (!socket) {
+    console.log('👤 ⚠️ Cannot subscribe to call:missed: socket not connected');
+    return () => { };
+  }
+
+  socket.on('call:missed', callback);
+
+  return () => {
+    socket?.off('call:missed', callback);
   };
 };

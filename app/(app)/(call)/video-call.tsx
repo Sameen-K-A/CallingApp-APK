@@ -3,10 +3,12 @@ import { VideoConnectedState } from "@/components/call/VideoConnectedState";
 import { useCallTimer } from "@/hooks/useCallTimer";
 import { CallErrorPayload, CallRingingPayload } from "@/socket/types";
 import {
+  emitCallCancel,
   emitCallInitiate,
   isUserSocketConnected,
   onCallAccepted,
   onCallError,
+  onCallMissed,
   onCallRejected,
   onCallRinging,
 } from "@/socket/user.socket";
@@ -94,6 +96,11 @@ export default function VideoCall() {
       router.replace("/(app)/(user)/home");
     });
 
+    const unsubscribeMissed = onCallMissed((data) => {
+      showErrorToast("Call was not answered.");
+      router.replace("/(app)/(user)/home");
+    });
+
     const unsubscribeError = onCallError((data: CallErrorPayload) => {
       showErrorToast(data.message);
       router.replace("/(app)/(user)/home");
@@ -112,6 +119,7 @@ export default function VideoCall() {
       unsubscribeRinging();
       unsubscribeAccepted();
       unsubscribeRejected();
+      unsubscribeMissed();
       unsubscribeError();
       stop();
     };
@@ -120,6 +128,11 @@ export default function VideoCall() {
 
   const handleCancel = () => {
     stop();
+
+    if (callIdRef.current) {
+      emitCallCancel({ callId: callIdRef.current });
+    }
+
     router.replace("/(app)/(user)/home");
   };
 

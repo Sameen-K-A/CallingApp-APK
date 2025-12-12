@@ -3,10 +3,12 @@ import { ConnectingState } from "@/components/call/ConnectingState";
 import { useCallTimer } from "@/hooks/useCallTimer";
 import { CallErrorPayload, CallRingingPayload } from "@/socket/types";
 import {
+  emitCallCancel,
   emitCallInitiate,
   isUserSocketConnected,
   onCallAccepted,
   onCallError,
+  onCallMissed,
   onCallRejected,
   onCallRinging,
 } from "@/socket/user.socket";
@@ -92,6 +94,11 @@ export default function AudioCall() {
       router.replace("/(app)/(user)/home");
     });
 
+    const unsubscribeMissed = onCallMissed((data) => {
+      showErrorToast("Call was not answered.");
+      router.replace("/(app)/(user)/home");
+    });
+
     const unsubscribeError = onCallError((data: CallErrorPayload) => {
       showErrorToast(data.message);
       router.replace("/(app)/(user)/home");
@@ -110,6 +117,7 @@ export default function AudioCall() {
       unsubscribeRinging();
       unsubscribeAccepted();
       unsubscribeRejected();
+      unsubscribeMissed();
       unsubscribeError();
       stop();
     };
@@ -118,6 +126,11 @@ export default function AudioCall() {
 
   const handleCancel = () => {
     stop();
+
+    if (callIdRef.current) {
+      emitCallCancel({ callId: callIdRef.current });
+    };
+
     router.replace("/(app)/(user)/home");
   };
 

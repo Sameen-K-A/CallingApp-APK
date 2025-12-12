@@ -3,7 +3,9 @@ import { showToast } from '@/utils/toast';
 import { io, Socket } from 'socket.io-client';
 import {
   CallAcceptPayload,
+  CallCancelledPayload,
   CallIncomingPayload,
+  CallMissedPayload,
   CallRejectPayload,
   TelecallerCallAcceptedPayload,
   TelecallerClientEvents,
@@ -110,7 +112,31 @@ export const onCallAccepted = (callback: (data: TelecallerCallAcceptedPayload) =
   };
 };
 
+export const onCallMissed = (callback: (data: CallMissedPayload) => void): (() => void) => {
+  if (!socket) {
+    console.log('📞 ⚠️ Cannot subscribe to call:missed: socket is null');
+    return () => { };
+  }
 
+  socket.on('call:missed', callback);
+
+  return () => {
+    socket?.off('call:missed', callback);
+  };
+};
+
+export const onCallCancelled = (callback: (data: CallCancelledPayload) => void): (() => void) => {
+  if (!socket) {
+    console.log('📞 ⚠️ Cannot subscribe to call:cancelled: socket is null');
+    return () => { };
+  }
+
+  socket.on('call:cancelled', callback);
+
+  return () => {
+    socket?.off('call:cancelled', callback);
+  };
+};
 
 // ============================================
 // Call Event Emitters

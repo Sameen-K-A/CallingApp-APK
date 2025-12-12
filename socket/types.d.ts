@@ -57,6 +57,14 @@ export interface CallRejectedPayload {
   callId: string;
 };
 
+export interface CallCancelPayload {
+  callId: string;
+}
+
+export interface CallMissedPayload {
+  callId: string;
+}
+
 export interface UserServerEvents {
   error: (data: SocketError) => void;
   'telecaller:presence-changed': (data: TelecallerPresencePayload) => void;
@@ -64,10 +72,12 @@ export interface UserServerEvents {
   'call:error': (data: CallErrorPayload) => void;
   'call:accepted': (data: CallAcceptedPayload) => void;
   'call:rejected': (data: CallRejectedPayload) => void;
+  'call:missed': (data: CallMissedPayload) => void;
 };
 
 export interface UserClientEvents {
   'call:initiate': (data: CallInitiatePayload) => void;
+  'call:cancel': (data: CallCancelPayload) => void;
 };
 
 // ============================================
@@ -94,10 +104,16 @@ export interface TelecallerCallAcceptedPayload {
   caller: CallParticipant;
 };
 
+export interface CallCancelledPayload {
+  callId: string;
+};
+
 export interface TelecallerServerEvents {
   error: (data: SocketError) => void;
   'call:incoming': (data: CallIncomingPayload) => void;
   'call:accepted': (data: TelecallerCallAcceptedPayload) => void;
+  'call:missed': (data: CallMissedPayload) => void;
+  'call:cancelled': (data: CallCancelledPayload) => void;
 };
 
 export interface TelecallerClientEvents {

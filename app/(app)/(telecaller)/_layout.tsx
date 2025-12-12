@@ -10,8 +10,13 @@ import {
   isTelecallerSocketConnected,
   setOnSocketReady
 } from "@/socket/telecaller.socket";
-import { CallIncomingPayload, TelecallerCallAcceptedPayload } from "@/socket/types";
-import { showErrorToast } from "@/utils/toast";
+import {
+  CallCancelledPayload,
+  CallIncomingPayload,
+  CallMissedPayload,
+  TelecallerCallAcceptedPayload
+} from "@/socket/types";
+import { showErrorToast, showToast } from "@/utils/toast";
 import { Redirect, router, Slot } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
@@ -80,13 +85,27 @@ export default function TelecallerLayout() {
       });
     };
 
+    const handleCallMissed = (data: CallMissedPayload) => {
+      setIncomingCall(null);
+      showToast('Missed call');
+    };
+
+    const handleCallCancelled = (data: CallCancelledPayload) => {
+      setIncomingCall(null);
+      showToast('Call was cancelled');
+    };
+
     socket.on('call:incoming', handleIncomingCall);
     socket.on('call:accepted', handleCallAccepted);
+    socket.on('call:missed', handleCallMissed);
+    socket.on('call:cancelled', handleCallCancelled);
 
     return () => {
       console.log('📞 Cleaning up call subscriptions');
       socket.off('call:incoming', handleIncomingCall);
       socket.off('call:accepted', handleCallAccepted);
+      socket.off('call:missed', handleCallMissed);
+      socket.off('call:cancelled', handleCallCancelled);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getTelecallerApprovalStatus, socketReady, router]);
