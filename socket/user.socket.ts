@@ -1,5 +1,5 @@
 import { API_CONFIG } from '@/config/api';
-import { showToast } from '@/utils/toast';
+import { showErrorToast } from '@/utils/toast';
 import { io, Socket } from 'socket.io-client';
 import {
   CallAcceptedPayload,
@@ -21,6 +21,37 @@ type UserSocket = Socket<UserServerEvents, UserClientEvents>;
 let socket: UserSocket | null = null;
 let isManuallyDisconnected = false;
 
+// Helper Functions
+const createEventSubscriber = <T>(eventName: keyof UserServerEvents) => {
+  return (callback: (data: T) => void): (() => void) => {
+    if (!socket) {
+      showErrorToast("Connection lost, Please restart the app");
+      console.log(`👤 ⚠️ Cannot subscribe to ${eventName}: socket is null`);
+      return () => { };
+    }
+
+    socket.on(eventName, callback as any);
+
+    return () => {
+      socket?.off(eventName, callback as any);
+    };
+  };
+};
+
+const createEventEmitter = <T>(eventName: keyof UserClientEvents) => {
+  return (payload: T): boolean => {
+    if (!socket?.connected) {
+      showErrorToast("Connection lost, Please restart the app");
+      console.log(`👤 ⚠️ Cannot emit ${eventName}: socket not connected`);
+      return false;
+    }
+
+    socket.emit(eventName, payload as any);
+    return true;
+  };
+};
+
+// Socket Connection Management
 export const connectUserSocket = (token: string): UserSocket => {
   if (socket?.connected) {
     console.log('👤 User socket already connected');
@@ -54,7 +85,7 @@ export const connectUserSocket = (token: string): UserSocket => {
   });
 
   socket.on('error', (data) => {
-    showToast(data.message)
+    showErrorToast(data.message);
   });
 
   return socket;
@@ -74,129 +105,16 @@ export const isUserSocketConnected = (): boolean => socket?.connected ?? false;
 
 export const isUserSocketManuallyDisconnected = (): boolean => isManuallyDisconnected;
 
-
-// Telecaller Presence Change Listener
-export const onTelecallerPresenceChanged = (callback: (data: TelecallerPresencePayload) => void): (() => void) => {
-  if (!socket) {
-    console.log('👤 ⚠️ Cannot subscribe to presence changes: socket not connected');
-    return () => { };
-  }
-
-  socket.on('telecaller:presence-changed', callback);
-
-  // Return cleanup function
-  return () => {
-    socket?.off('telecaller:presence-changed', callback);
-  };
-};
+// Call Event Listeners
+export const onTelecallerPresenceChanged = createEventSubscriber<TelecallerPresencePayload>('telecaller:presence-changed');
+export const onCallRinging = createEventSubscriber<CallRingingPayload>('call:ringing');
+export const onCallError = createEventSubscriber<CallErrorPayload>('call:error');
+export const onCallAccepted = createEventSubscriber<CallAcceptedPayload>('call:accepted');
+export const onCallRejected = createEventSubscriber<CallRejectedPayload>('call:rejected');
+export const onCallMissed = createEventSubscriber<CallMissedPayload>('call:missed');
+export const onCallEnded = createEventSubscriber<CallEndedPayload>('call:ended');
 
 // Call Event Emitters
-export const emitCallInitiate = (payload: CallInitiatePayload): boolean => {
-  if (!socket?.connected) {
-    console.log('👤 ⚠️ Cannot initiate call: socket not connected');
-    return false;
-  }
-
-  socket.emit('call:initiate', payload);
-  return true;
-};
-
-export const emitCallCancel = (payload: CallCancelPayload): boolean => {
-  if (!socket?.connected) {
-    console.log('👤 ⚠️ Cannot cancel call: socket not connected');
-    return false;
-  }
-
-  socket.emit('call:cancel', payload);
-  return true;
-};
-
-export const emitCallEnd = (payload: CallEndPayload): boolean => {
-  if (!socket?.connected) {
-    console.log('👤 ⚠️ Cannot end call: socket not connected');
-    return false;
-  }
-
-  socket.emit('call:end', payload);
-  console.log('👤 🔚 Emitted call:end:', payload);
-  return true;
-};
-
-// Call Event Listeners
-export const onCallRinging = (callback: (data: CallRingingPayload) => void): (() => void) => {
-  if (!socket) {
-    console.log('👤 ⚠️ Cannot subscribe to call:ringing: socket not connected');
-    return () => { };
-  }
-
-  socket.on('call:ringing', callback);
-
-  return () => {
-    socket?.off('call:ringing', callback);
-  };
-};
-
-export const onCallError = (callback: (data: CallErrorPayload) => void): (() => void) => {
-  if (!socket) {
-    console.log('👤 ⚠️ Cannot subscribe to call:error: socket not connected');
-    return () => { };
-  }
-
-  socket.on('call:error', callback);
-
-  return () => {
-    socket?.off('call:error', callback);
-  };
-};
-
-export const onCallAccepted = (callback: (data: CallAcceptedPayload) => void): (() => void) => {
-  if (!socket) {
-    console.log('👤 ⚠️ Cannot subscribe to call:accepted: socket not connected');
-    return () => { };
-  }
-
-  socket.on('call:accepted', callback);
-
-  return () => {
-    socket?.off('call:accepted', callback);
-  };
-};
-
-export const onCallRejected = (callback: (data: CallRejectedPayload) => void): (() => void) => {
-  if (!socket) {
-    console.log('👤 ⚠️ Cannot subscribe to call:rejected: socket not connected');
-    return () => { };
-  }
-
-  socket.on('call:rejected', callback);
-
-  return () => {
-    socket?.off('call:rejected', callback);
-  };
-};
-
-export const onCallMissed = (callback: (data: CallMissedPayload) => void): (() => void) => {
-  if (!socket) {
-    console.log('👤 ⚠️ Cannot subscribe to call:missed: socket not connected');
-    return () => { };
-  }
-
-  socket.on('call:missed', callback);
-
-  return () => {
-    socket?.off('call:missed', callback);
-  };
-};
-
-export const onCallEnded = (callback: (data: CallEndedPayload) => void): (() => void) => {
-  if (!socket) {
-    console.log('👤 ⚠️ Cannot subscribe to call:ended: socket not connected');
-    return () => { };
-  }
-
-  socket.on('call:ended', callback);
-
-  return () => {
-    socket?.off('call:ended', callback);
-  };
-};
+export const emitCallInitiate = createEventEmitter<CallInitiatePayload>('call:initiate');
+export const emitCallCancel = createEventEmitter<CallCancelPayload>('call:cancel');
+export const emitCallEnd = createEventEmitter<CallEndPayload>('call:end');
