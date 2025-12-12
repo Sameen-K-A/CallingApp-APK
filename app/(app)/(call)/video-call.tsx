@@ -1,18 +1,24 @@
 import { ConnectingState } from "@/components/call/ConnectingState";
 import { VideoConnectedState } from "@/components/call/VideoConnectedState";
 import { useCallTimer } from "@/hooks/useCallTimer";
+import {
+  emitCallEnd as emitTelecallerCallEnd,
+  getTelecallerSocket,
+} from "@/socket/telecaller.socket";
 import { CallErrorPayload, CallRingingPayload } from "@/socket/types";
 import {
   emitCallCancel,
+  emitCallEnd,
   emitCallInitiate,
   isUserSocketConnected,
   onCallAccepted,
+  onCallEnded,
   onCallError,
   onCallMissed,
   onCallRejected,
   onCallRinging,
 } from "@/socket/user.socket";
-import { showErrorToast } from "@/utils/toast";
+import { showErrorToast, showToast } from "@/utils/toast";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -54,9 +60,30 @@ export default function VideoCall() {
 
   const callIdRef = useRef<string | null>(null);
   const hasInitiatedRef = useRef(false);
+  const hasEndedRef = useRef(false);
 
   const isAndroid = Platform.OS === "android";
   const isUser = role === "USER";
+
+  const navigateToFeedback = () => {
+    if (hasEndedRef.current) return;
+    hasEndedRef.current = true;
+
+    stop();
+
+    router.replace({
+      pathname: "/(app)/(call)/feedback",
+      params: {
+        callId: callIdRef.current || initialCallId || "",
+        participantId,
+        participantName,
+        participantProfile: participantProfile || "",
+        duration: seconds.toString(),
+        callType: "VIDEO",
+        role,
+      },
+    });
+  };
 
   // Start timer immediately for telecaller (they're already connected)
   useEffect(() => {
@@ -106,6 +133,11 @@ export default function VideoCall() {
       router.replace("/(app)/(user)/home");
     });
 
+    const unsubscribeEnded = onCallEnded((data) => {
+      showToast("Call ended");
+      navigateToFeedback();
+    });
+
     // Initiate the call
     const success = emitCallInitiate({ telecallerId: participantId, callType: "VIDEO" });
 
@@ -120,11 +152,32 @@ export default function VideoCall() {
       unsubscribeAccepted();
       unsubscribeRejected();
       unsubscribeMissed();
+      unsubscribeEnded();
       unsubscribeError();
       stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Telecaller: Listen for call ended by user
+  useEffect(() => {
+    if (isUser) return;
+
+    const socket = getTelecallerSocket();
+    if (!socket) return;
+
+    const handleCallEnded = (data: { callId: string }) => {
+      showToast("Call ended");
+      navigateToFeedback();
+    };
+
+    socket.on('call:ended', handleCallEnded);
+
+    return () => {
+      socket.off('call:ended', handleCallEnded);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isUser]);
 
   const handleCancel = () => {
     stop();
@@ -149,22 +202,19 @@ export default function VideoCall() {
   };
 
   const handleEndCall = () => {
-    stop();
+    if (hasEndedRef.current) return;
 
-    const feedbackRoute = "/(app)/(call)/feedback";
+    const callId = callIdRef.current || initialCallId;
 
-    router.replace({
-      pathname: feedbackRoute,
-      params: {
-        callId: callIdRef.current || initialCallId || "",
-        participantId,
-        participantName,
-        participantProfile: participantProfile || "",
-        duration: seconds.toString(),
-        callType: "VIDEO",
-        role
-      },
-    });
+    if (callId) {
+      if (isUser) {
+        emitCallEnd({ callId });
+      } else {
+        emitTelecallerCallEnd({ callId });
+      }
+    }
+
+    navigateToFeedback();
   };
 
   return (

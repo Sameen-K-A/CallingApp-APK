@@ -4,6 +4,8 @@ import { io, Socket } from 'socket.io-client';
 import {
   CallAcceptedPayload,
   CallCancelPayload,
+  CallEndedPayload,
+  CallEndPayload,
   CallErrorPayload,
   CallInitiatePayload,
   CallMissedPayload,
@@ -109,6 +111,17 @@ export const emitCallCancel = (payload: CallCancelPayload): boolean => {
   return true;
 };
 
+export const emitCallEnd = (payload: CallEndPayload): boolean => {
+  if (!socket?.connected) {
+    console.log('👤 ⚠️ Cannot end call: socket not connected');
+    return false;
+  }
+
+  socket.emit('call:end', payload);
+  console.log('👤 🔚 Emitted call:end:', payload);
+  return true;
+};
+
 // Call Event Listeners
 export const onCallRinging = (callback: (data: CallRingingPayload) => void): (() => void) => {
   if (!socket) {
@@ -172,5 +185,18 @@ export const onCallMissed = (callback: (data: CallMissedPayload) => void): (() =
 
   return () => {
     socket?.off('call:missed', callback);
+  };
+};
+
+export const onCallEnded = (callback: (data: CallEndedPayload) => void): (() => void) => {
+  if (!socket) {
+    console.log('👤 ⚠️ Cannot subscribe to call:ended: socket not connected');
+    return () => { };
+  }
+
+  socket.on('call:ended', callback);
+
+  return () => {
+    socket?.off('call:ended', callback);
   };
 };

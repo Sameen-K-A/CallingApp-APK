@@ -4,6 +4,8 @@ import { io, Socket } from 'socket.io-client';
 import {
   CallAcceptPayload,
   CallCancelledPayload,
+  CallEndedPayload,
+  CallEndPayload,
   CallIncomingPayload,
   CallMissedPayload,
   CallRejectPayload,
@@ -138,6 +140,19 @@ export const onCallCancelled = (callback: (data: CallCancelledPayload) => void):
   };
 };
 
+export const onCallEnded = (callback: (data: CallEndedPayload) => void): (() => void) => {
+  if (!socket) {
+    console.log('📞 ⚠️ Cannot subscribe to call:ended: socket is null');
+    return () => { };
+  }
+
+  socket.on('call:ended', callback);
+
+  return () => {
+    socket?.off('call:ended', callback);
+  };
+};
+
 // ============================================
 // Call Event Emitters
 // ============================================
@@ -159,5 +174,15 @@ export const emitCallReject = (payload: CallRejectPayload): boolean => {
   }
 
   socket.emit('call:reject', payload);
+  return true;
+};
+
+export const emitCallEnd = (payload: CallEndPayload): boolean => {
+  if (!socket?.connected) {
+    console.log('📞 ⚠️ Cannot end call: socket not connected');
+    return false;
+  }
+
+  socket.emit('call:end', payload);
   return true;
 };
