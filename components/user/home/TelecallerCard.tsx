@@ -140,7 +140,7 @@ export const TelecallerCard: React.FC<TelecallerCardProps> = ({ telecaller, onTo
         </View>
       </View>
 
-      <View className="flex-row items-center mt-4 gap-6">
+      <View className="flex-row items-center mt-4 gap-2">
         <TouchableOpacity
           className={`flex-1 flex-row items-center justify-center py-2.5 rounded-xl border ${isAvailable
             ? "bg-success/5 border-success/30"
