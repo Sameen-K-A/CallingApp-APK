@@ -1,6 +1,5 @@
 import { EmptyTelecallerState } from "@/components/user/home/EmptyTelecallerState";
 import { TelecallerCard } from "@/components/user/home/TelecallerCard";
-import { TelecallerProfileSheet } from "@/components/user/home/TelecallerProfileSheet";
 import { TelecallerListSkeleton } from "@/components/user/skeleton/TelecallerCardSkeleton";
 import { API_CONFIG } from "@/config/api";
 import useErrorHandler from "@/hooks/useErrorHandler";
@@ -10,6 +9,7 @@ import { onTelecallerPresenceChanged } from "@/socket/user.socket";
 import { TelecallerListItem } from "@/types/user";
 import { showToast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, ScrollView, Text, View } from "react-native";
 
@@ -32,10 +32,6 @@ export default function Home() {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
 
-  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
-  const [selectedTelecaller, setSelectedTelecaller] = useState<TelecallerListItem | null>(null);
-  const [sheetVisible, setSheetVisible] = useState(false);
-
   const isInitialFetchDone = useRef(false);
 
   const fetchTelecallers = useCallback(async (pageNumber: number, isRefresh = false) => {
@@ -57,7 +53,6 @@ export default function Home() {
     }
   }, [handleError]);
 
-  // Initial fetch
   useEffect(() => {
     setIsLoading(true);
     fetchTelecallers(1).finally(() => {
@@ -67,7 +62,6 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Subscribe to real-time presence changes
   useEffect(() => {
     if (!isInitialFetchDone.current) return;
 
@@ -108,18 +102,13 @@ export default function Home() {
 
         return prev;
       });
-
-      // Also update selected telecaller if sheet is open
-      if (selectedTelecaller?._id === data.telecallerId) {
-        setSelectedTelecaller((prev) => prev ? { ...prev, presence: data.presence } : null);
-      }
     });
 
     return () => {
       unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTelecaller?._id, isInitialFetchDone.current]);
+  }, [isInitialFetchDone.current]);
 
   const handleLoadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;
@@ -136,20 +125,8 @@ export default function Home() {
     setIsRefreshing(false);
   }, [fetchTelecallers]);
 
-  const openSheet = (telecaller: TelecallerListItem) => {
-    setSelectedTelecaller(telecaller);
-    setSheetVisible(true);
-  };
-
-  const closeSheet = () => {
-    setSheetVisible(false);
-    setTimeout(() => setSelectedTelecaller(null), 300);
-  };
-
   const handleToggleFavorite = async (telecaller: TelecallerListItem) => {
     const isFavorite = telecaller.isFavorite;
-
-    setIsFavoriteLoading(true);
 
     try {
       if (isFavorite) {
@@ -159,18 +136,37 @@ export default function Home() {
       }
 
       showToast('Favorite list updated.');
-      // Update telecallers list on success
-      setTelecallers((prev) => prev.map((item) => item._id === telecaller._id ? { ...item, isFavorite: !isFavorite } : item));
-      // Update selected telecaller if sheet is open
-      if (selectedTelecaller?._id === telecaller._id) {
-        setSelectedTelecaller((prev) => prev ? { ...prev, isFavorite: !isFavorite } : null);
-      };
 
+      setTelecallers((prev) => prev.map((item) => item._id === telecaller._id ? { ...item, isFavorite: !isFavorite } : item));
     } catch (error) {
       handleError(error, "Failed to update favorite");
-    } finally {
-      setIsFavoriteLoading(false);
     }
+  };
+
+  const handleVoiceCall = (telecaller: TelecallerListItem) => {
+    router.push({
+      pathname: "/(app)/(call)/audio-call",
+      params: {
+        participantId: telecaller._id,
+        participantName: telecaller.name,
+        participantProfile: telecaller.profile || "",
+        callType: "AUDIO",
+        role: "USER",
+      },
+    });
+  };
+
+  const handleVideoCall = (telecaller: TelecallerListItem) => {
+    router.push({
+      pathname: "/(app)/(call)/video-call",
+      params: {
+        participantId: telecaller._id,
+        participantName: telecaller.name,
+        participantProfile: telecaller.profile || "",
+        callType: "VIDEO",
+        role: "USER",
+      },
+    });
   };
 
   const renderHeader = () => (
@@ -209,10 +205,15 @@ export default function Home() {
   const renderItem = useCallback(
     ({ item }: { item: TelecallerListItem }) => (
       <View className="px-4">
-        <TelecallerCard telecaller={item} onPress={openSheet} />
+        <TelecallerCard
+          telecaller={item}
+          onToggleFavorite={handleToggleFavorite}
+          onVoiceCall={handleVoiceCall}
+          onVideoCall={handleVideoCall}
+        />
       </View>
-    ),
-    []
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    ), []
   );
 
   if (isLoading) {
@@ -294,15 +295,6 @@ export default function Home() {
               colors={["#8B5CF6"]}
             />
           }
-        />
-
-        <TelecallerProfileSheet
-          visible={sheetVisible}
-          telecaller={selectedTelecaller}
-          onClose={closeSheet}
-          onToggleFavorite={handleToggleFavorite}
-          isFavorite={selectedTelecaller?.isFavorite || false}
-          isFavoriteLoading={isFavoriteLoading}
         />
       </View>
     </View>
