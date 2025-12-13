@@ -12,12 +12,7 @@ interface TelecallerCardProps {
   onVideoCall: (telecaller: TelecallerListItem) => void;
 }
 
-export const TelecallerCard: React.FC<TelecallerCardProps> = ({
-  telecaller,
-  onToggleFavorite,
-  onVoiceCall,
-  onVideoCall,
-}) => {
+export const TelecallerCard: React.FC<TelecallerCardProps> = ({ telecaller, onToggleFavorite, onVoiceCall, onVideoCall }) => {
   const getPresenceConfig = () => {
     switch (telecaller.presence) {
       case "ONLINE":
@@ -36,17 +31,17 @@ export const TelecallerCard: React.FC<TelecallerCardProps> = ({
         };
       case "OFFLINE":
         return {
-          color: "bg-gray-400",
+          color: "bg-red-400",
           text: "Offline",
-          textColor: "text-gray-500",
-          bgLight: "bg-gray-100",
+          textColor: "text-red-500",
+          bgLight: "bg-red-100",
         };
       default:
         return {
-          color: "bg-gray-400",
+          color: "bg-red-400",
           text: "Offline",
-          textColor: "text-gray-500",
-          bgLight: "bg-gray-100",
+          textColor: "text-red-500",
+          bgLight: "bg-red-100",
         };
     }
   };
@@ -86,9 +81,7 @@ export const TelecallerCard: React.FC<TelecallerCardProps> = ({
               </Text>
             )}
           </View>
-          <View
-            className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-card ${presence.color}`}
-          />
+          <View className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-card ${presence.color}`} />
         </View>
 
         <View className="flex-1 ml-3">
@@ -114,12 +107,8 @@ export const TelecallerCard: React.FC<TelecallerCardProps> = ({
           </View>
 
           <View className="flex-row items-center mt-1 gap-2">
-            <View
-              className={`flex-row items-center px-2 py-0.5 rounded-full ${presence.bgLight}`}
-            >
-              <View
-                className={`w-1.5 h-1.5 rounded-full ${presence.color} mr-1`}
-              />
+            <View className={`flex-row items-center px-2 py-0.5 rounded-full ${presence.bgLight}`}>
+              <View className={`w-1.5 h-1.5 rounded-full ${presence.color} mr-1`} />
               <Text
                 className={`text-xs font-medium ${presence.textColor}`}
                 allowFontScaling={false}
@@ -151,69 +140,59 @@ export const TelecallerCard: React.FC<TelecallerCardProps> = ({
         </View>
       </View>
 
-      <View className="flex-row items-center mt-4 gap-2">
+      <View className="flex-row items-center mt-4 gap-6">
         <TouchableOpacity
           className={`flex-1 flex-row items-center justify-center py-2.5 rounded-xl border ${isAvailable
-              ? "bg-success/5 border-success/30"
-              : "bg-gray-50 border-gray-200"
+            ? "bg-success/5 border-success/30"
+            : "bg-gray-50 border-gray-200"
             }`}
           disabled={!isAvailable}
           onPress={handleVoiceCall}
           activeOpacity={0.7}
         >
-          <View
-            className={`w-8 h-8 rounded-full items-center justify-center ${isAvailable ? "bg-success" : "bg-gray-300"
-              }`}
-          >
+          <View className={`w-8 h-8 rounded-full items-center justify-center ${isAvailable ? "bg-success" : "bg-gray-300"}`} >
             <Ionicons name="call" size={16} color="#FFFFFF" />
           </View>
           <View className="ml-2">
             <Text
-              className={`text-xs font-semibold ${isAvailable ? "text-text" : "text-gray-400"
-                }`}
+              className={`text-xs font-semibold ${isAvailable ? "text-text" : "text-gray-400"}`}
               allowFontScaling={false}
             >
               Voice Call
             </Text>
             <Text
-              className={`text-[10px] ${isAvailable ? "text-success" : "text-gray-400"
-                }`}
+              className={`text-[10px] ${isAvailable ? "text-success" : "text-gray-400"}`}
               allowFontScaling={false}
             >
-              1 coin/sec
+              1 coin/ second
             </Text>
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity
           className={`flex-1 flex-row items-center justify-center py-2.5 rounded-xl border ${isAvailable
-              ? "bg-primary/5 border-primary/30"
-              : "bg-gray-50 border-gray-200"
+            ? "bg-primary/5 border-primary/30"
+            : "bg-gray-50 border-gray-200"
             }`}
           disabled={!isAvailable}
           onPress={handleVideoCall}
           activeOpacity={0.7}
         >
-          <View
-            className={`w-8 h-8 rounded-full items-center justify-center ${isAvailable ? "bg-primary" : "bg-gray-300"
-              }`}
-          >
+          <View className={`w-8 h-8 rounded-full items-center justify-center ${isAvailable ? "bg-primary" : "bg-gray-300"}`}>
             <Ionicons name="videocam" size={16} color="#FFFFFF" />
           </View>
           <View className="ml-2">
             <Text
-              className={`text-xs font-semibold ${isAvailable ? "text-text" : "text-gray-400"
-                }`}
+              className={`text-xs font-semibold ${isAvailable ? "text-text" : "text-gray-400"}`}
               allowFontScaling={false}
             >
               Video Call
             </Text>
             <Text
-              className={`text-[10px] ${isAvailable ? "text-primary" : "text-gray-400"
-                }`}
+              className={`text-[10px] ${isAvailable ? "text-primary" : "text-gray-400"}`}
               allowFontScaling={false}
             >
-              3 coins/sec
+              3 coins/ second
             </Text>
           </View>
         </TouchableOpacity>

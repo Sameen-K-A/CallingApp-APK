@@ -124,32 +124,6 @@ export const FavoriteTelecallerCard: React.FC<FavoriteTelecallerCardProps> = ({ 
     };
   });
 
-  const getPresenceColor = () => {
-    switch (telecaller.presence) {
-      case "ONLINE":
-        return "bg-success";
-      case "ON_CALL":
-        return "bg-warning";
-      case "OFFLINE":
-        return "bg-destructive";
-      default:
-        return "bg-destructive";
-    }
-  };
-
-  const getPresenceText = () => {
-    switch (telecaller.presence) {
-      case "ONLINE":
-        return "Online";
-      case "ON_CALL":
-        return "On Call";
-      case "OFFLINE":
-        return "Offline";
-      default:
-        return "Offline";
-    }
-  };
-
   return (
     <View className="mb-2">
       <Animated.View
@@ -177,23 +151,17 @@ export const FavoriteTelecallerCard: React.FC<FavoriteTelecallerCardProps> = ({ 
           style={animatedCardStyle}
         >
           <View className="flex-row items-center">
-            <View className="relative">
-              <View className="w-16 h-16 rounded-full bg-muted border-2 border-primary/20 items-center justify-center overflow-hidden">
-                {telecaller.profile?.startsWith("avatar-") ? (
-                  <Avatar avatarId={telecaller.profile} size={60} />
-                ) : (
-                  <Text
-                    className="text-xl font-semibold text-primary"
-                    allowFontScaling={false}
-                  >
-                    {getInitials(telecaller.name)}
-                  </Text>
-                )}
-              </View>
-
-              <View className={`absolute bottom-0 right-0 w-5 h-5 rounded-full border-2 border-card items-center justify-center ${getPresenceColor()}`} >
-                <View className="w-2 h-2 rounded-full bg-white" />
-              </View>
+            <View className="w-16 h-16 rounded-full bg-muted border-2 border-primary/20 items-center justify-center overflow-hidden">
+              {telecaller.profile?.startsWith("avatar-") ? (
+                <Avatar avatarId={telecaller.profile} size={60} />
+              ) : (
+                <Text
+                  className="text-xl font-semibold text-primary"
+                  allowFontScaling={false}
+                >
+                  {getInitials(telecaller.name)}
+                </Text>
+              )}
             </View>
 
             <View className="flex-1 ml-4">
@@ -205,27 +173,6 @@ export const FavoriteTelecallerCard: React.FC<FavoriteTelecallerCardProps> = ({ 
                 >
                   {telecaller.name}
                 </Text>
-
-                <View
-                  className={`ml-2 px-2 py-0.5 rounded-full ${telecaller.presence === "ONLINE"
-                    ? "bg-success/10"
-                    : telecaller.presence === "ON_CALL"
-                      ? "bg-warning/10"
-                      : "bg-muted"
-                    }`}
-                >
-                  <Text
-                    allowFontScaling={false}
-                    className={`text-xs font-medium ${telecaller.presence === "ONLINE"
-                      ? "text-success"
-                      : telecaller.presence === "ON_CALL"
-                        ? "text-warning"
-                        : "text-textMuted"
-                      }`}
-                  >
-                    {getPresenceText()}
-                  </Text>
-                </View>
               </View>
 
               {telecaller.language && (
