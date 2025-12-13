@@ -45,10 +45,10 @@ export const USER_TAB_ITEMS: TabItem[] = [
     route: "/(app)/(user)/recharge",
   },
   {
-    id: "menu",
-    label: "Menu",
-    icon: "menu",
-    iconFocused: "menu",
+    id: "settings",
+    label: "Settings",
+    icon: "settings-outline",
+    iconFocused: "settings",
     action: "menu",
   },
 ];
