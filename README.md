@@ -39,12 +39,22 @@
 │   ├── fonts  
 │   │   ├── Nexa-Heavy.ttf  
 │   │   └── Nexa-ExtraLight.ttf  
+│   ├── svgs  
+│   │   ├── avatar-1.svg  
+│   │   ├── avatar-2.svg  
+│   │   ├── avatar-3.svg  
+│   │   ├── avatar-4.svg  
+│   │   ├── avatar-5.svg  
+│   │   ├── avatar-6.svg  
+│   │   ├── avatar-7.svg  
+│   │   └── avatar-8.svg
 │   └── images  
 ├── components  
 │   ├── call  
 │   │   ├── AudioConnectedState.tsx  
 │   │   ├── CallControls.tsx  
 │   │   ├── ConnectingState.tsx  
+│   │   ├── IncomingCallOverlay.tsx  
 │   │   ├── SelfVideoPreview.tsx  
 │   │   └── VideoConnectedState.tsx  
 │   ├── shared  
@@ -55,8 +65,7 @@
 │   │   │   └── ProfileHeader.tsx  
 │   │   ├── avatars  
 │   │   │   └── index.tsx  
-│   │   ├── help  
-│   │   │   ├── index.ts  
+│   │   ├── help
 │   │   │   ├── BugReportDrawer.tsx  
 │   │   │   ├── ContactDrawer.tsx  
 │   │   │   ├── HelpItem.tsx  
@@ -79,8 +88,7 @@
 │   │   │   └── FavoriteTelecallerCard.tsx  
 │   │   ├── home  
 │   │   │   ├── EmptyTelecallerState.tsx  
-│   │   │   ├── TelecallerCard.tsx  
-│   │   │   └── TelecallerProfileSheet.tsx  
+│   │   │   ├── TelecallerCard.tsx
 │   │   ├── recharge  
 │   │   │   ├── BalanceCard.tsx  
 │   │   │   ├── ConfirmationModal.tsx  
@@ -100,6 +108,7 @@
 │   │   └── SideDrawer.tsx  
 │   ├── telecaller  
 │   │   ├── Header.tsx  
+│   │   ├── ReapplyDrawer.tsx  
 │   │   └── TabBar.tsx  
 │   ├── lib  
 │   │   └── utils.ts  
@@ -142,6 +151,7 @@
 │   ├── general.d.ts  
 │   └── user.d.ts  
 ├── utils  
+│   ├── toast.tsx
 │   └── formatter.ts  
 ├── node_modules  
 ├── .env  
