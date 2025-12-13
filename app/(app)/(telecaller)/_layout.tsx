@@ -11,10 +11,8 @@ import {
   setOnSocketReady
 } from "@/socket/telecaller.socket";
 import {
-  CallCancelledPayload,
-  CallIncomingPayload,
-  CallMissedPayload,
-  TelecallerCallAcceptedPayload
+  CallIdPayload,
+  TelecallerCallInformationPayload
 } from "@/socket/types";
 import { showErrorToast, showToast } from "@/utils/toast";
 import { Redirect, router, Slot } from "expo-router";
@@ -23,7 +21,7 @@ import { View } from "react-native";
 
 export default function TelecallerLayout() {
   const { isLoading, isProfileComplete, isUser, getTelecallerApprovalStatus } = useAuth();
-  const [incomingCall, setIncomingCall] = useState<CallIncomingPayload | null>(null);
+  const [incomingCall, setIncomingCall] = useState<TelecallerCallInformationPayload | null>(null);
   const [socketReady, setSocketReady] = useState(false);
 
   // Listen for socket ready
@@ -53,7 +51,7 @@ export default function TelecallerLayout() {
     const socket = getTelecallerSocket();
     if (!socket) return;
 
-    const handleIncomingCall = (data: CallIncomingPayload) => {
+    const handleIncomingCall = (data: TelecallerCallInformationPayload) => {
       setIncomingCall((current) => {
         if (current) {
           console.log('📞 Already have incoming call, ignoring');
@@ -63,7 +61,7 @@ export default function TelecallerLayout() {
       });
     };
 
-    const handleCallAccepted = (data: TelecallerCallAcceptedPayload) => {
+    const handleCallAccepted = (data: TelecallerCallInformationPayload) => {
       console.log('📞 Call accepted confirmation received:', data);
 
       setIncomingCall(null);
@@ -85,12 +83,12 @@ export default function TelecallerLayout() {
       });
     };
 
-    const handleCallMissed = (data: CallMissedPayload) => {
+    const handleCallMissed = (data: CallIdPayload) => {
       setIncomingCall(null);
       showToast('Missed call');
     };
 
-    const handleCallCancelled = (data: CallCancelledPayload) => {
+    const handleCallCancelled = (data: CallIdPayload) => {
       setIncomingCall(null);
       showToast('Call was cancelled');
     };

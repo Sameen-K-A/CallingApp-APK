@@ -2,15 +2,10 @@ import { API_CONFIG } from '@/config/api';
 import { showErrorToast } from '@/utils/toast';
 import { io, Socket } from 'socket.io-client';
 import {
-  CallAcceptedPayload,
-  CallCancelPayload,
-  CallEndedPayload,
-  CallEndPayload,
-  CallErrorPayload,
+  CallIdPayload,
   CallInitiatePayload,
-  CallMissedPayload,
-  CallRejectedPayload,
   CallRingingPayload,
+  MessagePayload,
   TelecallerPresencePayload,
   UserClientEvents,
   UserServerEvents
@@ -108,13 +103,13 @@ export const isUserSocketManuallyDisconnected = (): boolean => isManuallyDisconn
 // Call Event Listeners
 export const onTelecallerPresenceChanged = createEventSubscriber<TelecallerPresencePayload>('telecaller:presence-changed');
 export const onCallRinging = createEventSubscriber<CallRingingPayload>('call:ringing');
-export const onCallError = createEventSubscriber<CallErrorPayload>('call:error');
-export const onCallAccepted = createEventSubscriber<CallAcceptedPayload>('call:accepted');
-export const onCallRejected = createEventSubscriber<CallRejectedPayload>('call:rejected');
-export const onCallMissed = createEventSubscriber<CallMissedPayload>('call:missed');
-export const onCallEnded = createEventSubscriber<CallEndedPayload>('call:ended');
+export const onCallError = createEventSubscriber<MessagePayload>('call:error');
+export const onCallAccepted = createEventSubscriber<CallIdPayload>('call:accepted');
+export const onCallRejected = createEventSubscriber<CallIdPayload>('call:rejected');
+export const onCallMissed = createEventSubscriber<CallIdPayload>('call:missed');
+export const onCallEnded = createEventSubscriber<CallIdPayload>('call:ended');
 
 // Call Event Emitters
 export const emitCallInitiate = createEventEmitter<CallInitiatePayload>('call:initiate');
-export const emitCallCancel = createEventEmitter<CallCancelPayload>('call:cancel');
-export const emitCallEnd = createEventEmitter<CallEndPayload>('call:end');
+export const emitCallCancel = createEventEmitter<CallIdPayload>('call:cancel');
+export const emitCallEnd = createEventEmitter<CallIdPayload>('call:end');

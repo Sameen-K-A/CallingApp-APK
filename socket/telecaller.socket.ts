@@ -2,14 +2,8 @@ import { API_CONFIG } from '@/config/api';
 import { showErrorToast } from '@/utils/toast';
 import { io, Socket } from 'socket.io-client';
 import {
-  CallAcceptPayload,
-  CallCancelledPayload,
-  CallEndedPayload,
-  CallEndPayload,
-  CallIncomingPayload,
-  CallMissedPayload,
-  CallRejectPayload,
-  TelecallerCallAcceptedPayload,
+  CallIdPayload,
+  TelecallerCallInformationPayload,
   TelecallerClientEvents,
   TelecallerServerEvents
 } from './types';
@@ -113,13 +107,13 @@ export const setOnSocketReady = (callback: (() => void) | null): void => {
 };
 
 // Call Event Listeners
-export const onCallIncoming = createEventSubscriber<CallIncomingPayload>('call:incoming');
-export const onCallAccepted = createEventSubscriber<TelecallerCallAcceptedPayload>('call:accepted');
-export const onCallMissed = createEventSubscriber<CallMissedPayload>('call:missed');
-export const onCallCancelled = createEventSubscriber<CallCancelledPayload>('call:cancelled');
-export const onCallEnded = createEventSubscriber<CallEndedPayload>('call:ended');
+export const onCallIncoming = createEventSubscriber<TelecallerCallInformationPayload>('call:incoming');
+export const onCallAccepted = createEventSubscriber<TelecallerCallInformationPayload>('call:accepted');
+export const onCallMissed = createEventSubscriber<CallIdPayload>('call:missed');
+export const onCallCancelled = createEventSubscriber<CallIdPayload>('call:cancelled');
+export const onCallEnded = createEventSubscriber<CallIdPayload>('call:ended');
 
 // Call Event Emitters
-export const emitCallAccept = createEventEmitter<CallAcceptPayload>('call:accept');
-export const emitCallReject = createEventEmitter<CallRejectPayload>('call:reject');
-export const emitCallEnd = createEventEmitter<CallEndPayload>('call:end');
+export const emitCallAccept = createEventEmitter<CallIdPayload>('call:accept');
+export const emitCallReject = createEventEmitter<CallIdPayload>('call:reject');
+export const emitCallEnd = createEventEmitter<CallIdPayload>('call:end');

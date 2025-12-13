@@ -5,7 +5,7 @@ import {
   emitCallEnd as emitTelecallerCallEnd,
   getTelecallerSocket,
 } from "@/socket/telecaller.socket";
-import { CallErrorPayload, CallRingingPayload } from "@/socket/types";
+import { CallRingingPayload, MessagePayload } from "@/socket/types";
 import {
   emitCallCancel,
   emitCallEnd,
@@ -128,7 +128,7 @@ export default function VideoCall() {
       router.replace("/(app)/(user)/home");
     });
 
-    const unsubscribeError = onCallError((data: CallErrorPayload) => {
+    const unsubscribeError = onCallError((data: MessagePayload) => {
       showErrorToast(data.message);
       router.replace("/(app)/(user)/home");
     });

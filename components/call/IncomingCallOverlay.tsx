@@ -1,5 +1,5 @@
 import { Avatar } from '@/components/shared/avatars';
-import { CallIncomingPayload } from '@/socket/types';
+import { TelecallerCallInformationPayload } from '@/socket/types';
 import { getInitials } from '@/utils/formatter';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -10,7 +10,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withSeq
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface IncomingCallOverlayProps {
-  callData: CallIncomingPayload;
+  callData: TelecallerCallInformationPayload;
   onAccept: () => void;
   onReject: () => void;
 }

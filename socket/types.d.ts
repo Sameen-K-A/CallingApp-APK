@@ -1,134 +1,86 @@
-export interface SocketError {
+import { ITelecaller } from "@/types/general";
+import { ICall } from "@/types/user";
+
+// ========================================= Common Types & Interfaces =========================================
+
+export type CallType = ICall["callType"];
+
+export type PresenceStatus = ITelecaller["telecallerProfile"]["presence"];
+
+export interface CallIdPayload {
+  callId: string;
+};
+
+export interface MessagePayload {
   message: string;
 };
 
-// ============================================
-// Telecaller Broadcast Data (received when telecaller comes online)
-// ============================================
-export interface TelecallerBroadcastData {
+export interface BaseParticipant {
   _id: string;
   name: string;
   profile: string | null;
+};
+
+// ========================== Telecaller Broadcast Data (Received when telecaller comes online) ==============================
+export interface TelecallerBroadcastData extends BaseParticipant {
   language: string;
   about: string;
 };
 
-// ============================================
-// Presence Change Payload
-// ============================================
+// ================================================ Presence Change Payload ==================================================
 export interface TelecallerPresencePayload {
   telecallerId: string;
-  presence: 'ONLINE' | 'OFFLINE' | 'ON_CALL';
+  presence: PresenceStatus;
   telecaller: TelecallerBroadcastData | null;
 };
 
-// ============================================
-// Call Participant (generic for both user and telecaller)
-// ============================================
-export interface CallParticipant {
-  _id: string;
-  name: string;
-  profile: string | null;
-};
-
-// ============================================
-// User Socket Events
-// ============================================
-
+// =========================================== Initiate Call to Telecaller from User Side ====================================
 export interface CallInitiatePayload {
   telecallerId: string;
-  callType: 'AUDIO' | 'VIDEO';
+  callType: CallType;
 };
 
-export interface CallRingingPayload {
-  callId: string;
-  telecaller: CallParticipant;
+// =============================== Confirmation to User when Call is Connected to Telecaller =================================
+export interface CallRingingPayload extends CallIdPayload {
+  telecaller: BaseParticipant;
 };
 
-export interface CallErrorPayload {
-  message: string;
+// ====================== Incoming Call Information for Telecaller and Call Accept Confirmation to Server ====================
+export interface TelecallerCallInformationPayload extends CallIdPayload {
+  callType: CallType;
+  caller: BaseParticipant;
 };
 
-export interface CallAcceptedPayload {
-  callId: string;
-};
-
-export interface CallRejectedPayload {
-  callId: string;
-};
-
-export interface CallCancelPayload {
-  callId: string;
-}
-
-export interface CallMissedPayload {
-  callId: string;
-}
-
-export interface CallEndPayload {
-  callId: string;
-}
-
-export interface CallEndedPayload {
-  callId: string;
-}
-
+// ================================================== User Socket Events =====================================================
 export interface UserServerEvents {
-  error: (data: SocketError) => void;
+  'error': (data: MessagePayload) => void;
   'telecaller:presence-changed': (data: TelecallerPresencePayload) => void;
   'call:ringing': (data: CallRingingPayload) => void;
-  'call:error': (data: CallErrorPayload) => void;
-  'call:accepted': (data: CallAcceptedPayload) => void;
-  'call:rejected': (data: CallRejectedPayload) => void;
-  'call:missed': (data: CallMissedPayload) => void;
-  'call:ended': (data: CallEndedPayload) => void;
+  'call:error': (data: MessagePayload) => void;
+  'call:accepted': (data: CallIdPayload) => void;
+  'call:rejected': (data: CallIdPayload) => void;
+  'call:missed': (data: CallIdPayload) => void;
+  'call:ended': (data: CallIdPayload) => void;
 };
 
 export interface UserClientEvents {
   'call:initiate': (data: CallInitiatePayload) => void;
-  'call:cancel': (data: CallCancelPayload) => void;
-  'call:end': (data: CallEndPayload) => void;
+  'call:cancel': (data: CallIdPayload) => void;
+  'call:end': (data: CallIdPayload) => void;
 };
 
-// ============================================
-// Telecaller Socket Events
-// ============================================
-
-export interface CallIncomingPayload {
-  callId: string;
-  callType: 'AUDIO' | 'VIDEO';
-  caller: CallParticipant;
-};
-
-export interface CallAcceptPayload {
-  callId: string;
-};
-
-export interface CallRejectPayload {
-  callId: string;
-};
-
-export interface TelecallerCallAcceptedPayload {
-  callId: string;
-  callType: 'AUDIO' | 'VIDEO';
-  caller: CallParticipant;
-};
-
-export interface CallCancelledPayload {
-  callId: string;
-};
-
+// ================================================ Telecaller Socket Events =================================================
 export interface TelecallerServerEvents {
-  error: (data: SocketError) => void;
-  'call:incoming': (data: CallIncomingPayload) => void;
-  'call:accepted': (data: TelecallerCallAcceptedPayload) => void;
-  'call:missed': (data: CallMissedPayload) => void;
-  'call:cancelled': (data: CallCancelledPayload) => void;
-  'call:ended': (data: CallEndedPayload) => void;
+  'error': (data: MessagePayload) => void;
+  'call:incoming': (data: TelecallerCallInformationPayload) => void;
+  'call:accepted': (data: TelecallerCallInformationPayload) => void;
+  'call:missed': (data: CallIdPayload) => void;
+  'call:cancelled': (data: CallIdPayload) => void;
+  'call:ended': (data: CallIdPayload) => void;
 };
 
 export interface TelecallerClientEvents {
-  'call:accept': (data: CallAcceptPayload) => void;
-  'call:reject': (data: CallRejectPayload) => void;
-  'call:end': (data: CallEndPayload) => void;
+  'call:accept': (data: CallIdPayload) => void;
+  'call:reject': (data: CallIdPayload) => void;
+  'call:end': (data: CallIdPayload) => void;
 };
