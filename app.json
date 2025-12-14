@@ -9,15 +9,46 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.telecalling.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera for video calls",
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone for calls"
+      }
     },
     "android": {
+      "package": "com.telecalling.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "BLUETOOTH",
+        "BLUETOOTH_CONNECT"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "*.razorpay.com"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
       "navigationBar": {
         "backgroundColor": "#FFFFFF",
         "barStyle": "dark-content"
@@ -61,6 +92,10 @@
       "fonts": {
         "Nexa-Heavy": "./assets/fonts/Nexa-Heavy.ttf",
         "Nexa-ExtraLight": "./assets/fonts/Nexa-ExtraLight.ttf"
+      },
+      "router": {},
+      "eas": {
+        "projectId": "13dcbe11-0b8a-481c-997c-75985767668e"
       }
     }
   }
