@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "application",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.telecalling.app",
@@ -49,10 +49,6 @@
           ]
         }
       ],
-      "navigationBar": {
-        "backgroundColor": "#FFFFFF",
-        "barStyle": "dark-content"
-      },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
