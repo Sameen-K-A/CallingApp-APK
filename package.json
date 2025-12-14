@@ -70,5 +70,16 @@
     "eslint-config-expo": "~10.0.0",
     "typescript": "~5.9.2"
   },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "@livekit/react-native",
+          "@livekit/react-native-webrtc",
+          "react-native-razorpay"
+        ]
+      }
+    }
+  },
   "private": true
 }
