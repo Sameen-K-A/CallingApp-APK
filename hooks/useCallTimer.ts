@@ -13,7 +13,6 @@ export function useCallTimer(): UseCallTimerReturn {
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const isRunningRef = useRef(false);
 
   const formatTime = useCallback((totalSeconds: number): string => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -27,22 +26,19 @@ export function useCallTimer(): UseCallTimerReturn {
   }, []);
 
   const start = useCallback(() => {
-    if (isRunningRef.current) return;
+    if (isRunning) return;
 
-    isRunningRef.current = true;
     setIsRunning(true);
-
     intervalRef.current = setInterval(() => {
       setSeconds((prev) => prev + 1);
     }, 1000);
-  }, []);
+  }, [isRunning]);
 
   const stop = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    isRunningRef.current = false;
     setIsRunning(false);
   }, []);
 
