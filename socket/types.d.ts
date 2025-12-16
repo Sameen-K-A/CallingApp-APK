@@ -20,6 +20,11 @@ export interface BaseParticipant {
   name: string;
   profile: string | null;
 };
+export interface LiveKitCredentials {
+  token: string;
+  url: string;
+  roomName: string;
+};
 
 // ========================== Telecaller Broadcast Data (Received when telecaller comes online) ==============================
 export interface TelecallerBroadcastData extends BaseParticipant {
@@ -43,12 +48,23 @@ export interface CallInitiatePayload {
 // =============================== Confirmation to User when Call is Connected to Telecaller =================================
 export interface CallRingingPayload extends CallIdPayload {
   telecaller: BaseParticipant;
+  livekit?: LiveKitCredentials; // Optional
 };
 
 // ====================== Incoming Call Information for Telecaller and Call Accept Confirmation to Server ====================
 export interface TelecallerCallInformationPayload extends CallIdPayload {
   callType: CallType;
   caller: BaseParticipant;
+  livekit?: LiveKitCredentials; // Optional
+};
+
+// ========================================= Call Accepted Payload =========================================
+export interface CallAcceptedPayload extends CallIdPayload {
+  livekit: LiveKitCredentials; // <--- REQUIRED HERE
+};
+
+export interface TelecallerCallAcceptedPayload extends TelecallerCallInformationPayload {
+  livekit: LiveKitCredentials; // <--- REQUIRED HERE
 };
 
 // ================================================== User Socket Events =====================================================
@@ -57,7 +73,7 @@ export interface UserServerEvents {
   'telecaller:presence-changed': (data: TelecallerPresencePayload) => void;
   'call:ringing': (data: CallRingingPayload) => void;
   'call:error': (data: MessagePayload) => void;
-  'call:accepted': (data: CallIdPayload) => void;
+  'call:accepted': (data: CallAcceptedPayload) => void;
   'call:rejected': (data: CallIdPayload) => void;
   'call:missed': (data: CallIdPayload) => void;
   'call:ended': (data: CallIdPayload) => void;
@@ -73,7 +89,7 @@ export interface UserClientEvents {
 export interface TelecallerServerEvents {
   'error': (data: MessagePayload) => void;
   'call:incoming': (data: TelecallerCallInformationPayload) => void;
-  'call:accepted': (data: TelecallerCallInformationPayload) => void;
+  'call:accepted': (data: TelecallerCallAcceptedPayload) => void;
   'call:missed': (data: CallIdPayload) => void;
   'call:cancelled': (data: CallIdPayload) => void;
   'call:ended': (data: CallIdPayload) => void;

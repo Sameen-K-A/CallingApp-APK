@@ -131,6 +131,7 @@
 │   └── AuthContext.tsx  
 ├── hooks  
 │   ├── useCallTimer.ts  
+│   ├── useLiveKitRoom.ts  
 │   └── useErrorHandler.ts  
 ├── schemas  
 │   ├── auth.schema.ts  
@@ -152,6 +153,7 @@
 │   └── user.d.ts  
 ├── utils  
 │   ├── toast.tsx
+│   ├── permission.ts
 │   └── formatter.ts  
 ├── node_modules  
 ├── .env  
@@ -225,3 +227,67 @@ socket/
 ├── user.socket.ts                          # User socket manager (connect, disconnect, getInstance)  
 ├── telecaller.socket.ts                    # Telecaller socket manager (connect, disconnect, getInstance)  
 └── types.ts                                # Shared socket types (ServerEvents, ClientEvents, SocketError)  
+
+## 📞 Call Management System Documentation
+
+## 🔄 Complete Call Workflow
+
+### 1️⃣ Initiation Phase (User Side)
+
+* **Trigger:** User clicks "Audio Call" or "Video Call" button on the Telecaller Profile.
+* **Permission Check:** The app validates permissions using `expo-camera`:
+  * **Audio Call:** Checks Microphone permission.
+  * **Video Call:** Checks both Microphone and Camera permissions.
+  * *Result:* If denied, shows an alert and stops. If granted, proceeds.
+* **Signaling:** App emits `call:initiate` event via Socket.IO to the Backend.
+* **Backend Processing:**
+  * Creates a new Call Document in MongoDB with status `RINGING`.
+  * Start 30 timer.
+* **Notification:** Backend emits:
+  * `call:ringing` → User (Caller).
+  * `call:incoming` → Telecaller (Receiver).
+
+### 2️⃣ Notification Phase (Telecaller Side)
+
+* **Trigger:** Telecaller receives `call:incoming` socket event.
+* **UI:** The `IncomingCallOverlay` appears over the current screen.
+* **Action:** Telecaller clicks the "Accept" button.
+
+### 3️⃣ Acceptance & Handshake Phase
+
+* **Telecaller Permission Check:** Before accepting, the app checks Microphone/Camera permissions.
+* **Immediate Navigation (UX Optimization):**
+  * Telecaller App **immediately** navigates to the Call Screen.
+  * Screen shows "Connecting..." state (since the Token is not yet received).
+* **Signaling:** Telecaller App emits `call:accept` event via Socket.IO.
+* **Backend Processing:**
+  * Updates Call Document status to `ACCEPTED`.
+  * Clear the 30 seconds timer.
+  * Update the telecaller presence to on_call.
+  * **Token Generation:** Backend calls `livekit-server-sdk` to generate two secure JWT Tokens (one for User, one for Telecaller).
+* **Distribution:** Backend emits `call:accepted` event containing the **LiveKit Token** and **Room Name** to **BOTH** User and Telecaller sockets simultaneously.
+  * broadcast to all online users to 'this telecaller presence is change to oncall'.
+
+### 4️⃣ Connection Phase (LiveKit Room Entry)
+
+* **Token Reception:**
+  * **User App:** Receives `call:accepted`, extracts the Token, and transitions from "Ringing" to "Connecting".
+  * **Telecaller App:** Receives `call:accepted` (while already on the call screen), extracts the Token.
+* **LiveKit Connection:**
+  * Both apps use the `useLiveKitRoom` hook to connect to LiveKit Cloud using the received Token.
+  * `room.connect(url, token)` is called.
+* **Media Flow:** Audio (and Video) tracks are published and subscribed. Users can now hear/see each other.
+
+### 5️⃣ Termination Phase
+
+* **Trigger:** User or Telecaller clicks the "End Call" button.
+* **Cleanup:**
+  * App calls `room.disconnect()` to leave LiveKit.
+  * `InCallManager` stops the audio session.
+* **Signaling:** App emits `call:end` event via Socket.IO.
+* **Backend Processing:**
+  * Updates Call Document status to `COMPLETED`.
+  * Calculates call duration.
+  * Updates Telecaller presence back to `ONLINE`.
+* **Notification:** Backend sends `call:ended` event to the other party to force-close their screen.
+* **Feedback:** Both users are redirected to the Feedback Screen.

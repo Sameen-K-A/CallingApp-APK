@@ -14,6 +14,7 @@ import {
   CallIdPayload,
   TelecallerCallInformationPayload
 } from "@/socket/types";
+import { checkCallPermissions } from "@/utils/permission";
 import { showErrorToast, showToast } from "@/utils/toast";
 import { Redirect, router, Slot } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -61,28 +62,6 @@ export default function TelecallerLayout() {
       });
     };
 
-    const handleCallAccepted = (data: TelecallerCallInformationPayload) => {
-      console.log('📞 Call accepted confirmation received:', data);
-
-      setIncomingCall(null);
-
-      const route = data.callType === 'VIDEO'
-        ? '/(app)/(call)/video-call'
-        : '/(app)/(call)/audio-call';
-
-      router.replace({
-        pathname: route,
-        params: {
-          callId: data.callId,
-          participantId: data.caller._id,
-          participantName: data.caller.name,
-          participantProfile: data.caller.profile || '',
-          callType: data.callType,
-          role: 'TELECALLER'
-        }
-      });
-    };
-
     const handleCallMissed = (data: CallIdPayload) => {
       setIncomingCall(null);
       showToast('Missed call');
@@ -94,14 +73,12 @@ export default function TelecallerLayout() {
     };
 
     socket.on('call:incoming', handleIncomingCall);
-    socket.on('call:accepted', handleCallAccepted);
     socket.on('call:missed', handleCallMissed);
     socket.on('call:cancelled', handleCallCancelled);
 
     return () => {
       console.log('📞 Cleaning up call subscriptions');
       socket.off('call:incoming', handleIncomingCall);
-      socket.off('call:accepted', handleCallAccepted);
       socket.off('call:missed', handleCallMissed);
       socket.off('call:cancelled', handleCallCancelled);
     };
@@ -109,14 +86,37 @@ export default function TelecallerLayout() {
   }, [getTelecallerApprovalStatus, socketReady, router]);
 
   // ========================================= Handle accept call ====================================
-  const handleAcceptCall = () => {
+  const handleAcceptCall = async () => {
     if (!incomingCall) return;
+
+    const hasPermission = await checkCallPermissions(incomingCall.callType);
+    if (!hasPermission) return;
 
     const success = emitCallAccept({ callId: incomingCall.callId });
     if (!success) {
       showErrorToast('Connection issue. Please try again.');
       setIncomingCall(null);
+      return;
     }
+
+    // Pass basic info, but NO TOKEN yet. The screen will show "Connecting..."
+    const route = incomingCall.callType === 'VIDEO'
+      ? '/(app)/(call)/video-call'
+      : '/(app)/(call)/audio-call';
+
+    router.push({
+      pathname: route,
+      params: {
+        callId: incomingCall.callId,
+        participantId: incomingCall.caller._id,
+        participantName: incomingCall.caller.name,
+        participantProfile: incomingCall.caller.profile || '',
+        callType: incomingCall.callType,
+        role: 'TELECALLER'
+      }
+    });
+
+    setIncomingCall(null);
   };
 
   // ========================================= Handle reject call ====================================

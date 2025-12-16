@@ -2,6 +2,7 @@ import { API_CONFIG } from '@/config/api';
 import { showErrorToast } from '@/utils/toast';
 import { io, Socket } from 'socket.io-client';
 import {
+  CallAcceptedPayload,
   CallIdPayload,
   CallInitiatePayload,
   CallRingingPayload,
@@ -104,7 +105,7 @@ export const isUserSocketManuallyDisconnected = (): boolean => isManuallyDisconn
 export const onTelecallerPresenceChanged = createEventSubscriber<TelecallerPresencePayload>('telecaller:presence-changed');
 export const onCallRinging = createEventSubscriber<CallRingingPayload>('call:ringing');
 export const onCallError = createEventSubscriber<MessagePayload>('call:error');
-export const onCallAccepted = createEventSubscriber<CallIdPayload>('call:accepted');
+export const onCallAccepted = createEventSubscriber<CallAcceptedPayload>('call:accepted');
 export const onCallRejected = createEventSubscriber<CallIdPayload>('call:rejected');
 export const onCallMissed = createEventSubscriber<CallIdPayload>('call:missed');
 export const onCallEnded = createEventSubscriber<CallIdPayload>('call:ended');

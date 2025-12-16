@@ -7,6 +7,7 @@ import apiClient from "@/services/api.service";
 import { TelecallerPresencePayload } from "@/socket/types";
 import { onTelecallerPresenceChanged } from "@/socket/user.socket";
 import { TelecallerListItem } from "@/types/user";
+import { checkCallPermissions } from "@/utils/permission";
 import { showToast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -143,7 +144,10 @@ export default function Home() {
     }
   };
 
-  const handleVoiceCall = (telecaller: TelecallerListItem) => {
+  const handleVoiceCall = async (telecaller: TelecallerListItem) => {
+    const hasPermission = await checkCallPermissions('AUDIO');
+    if (!hasPermission) return;
+
     router.push({
       pathname: "/(app)/(call)/audio-call",
       params: {
@@ -156,7 +160,10 @@ export default function Home() {
     });
   };
 
-  const handleVideoCall = (telecaller: TelecallerListItem) => {
+  const handleVideoCall = async (telecaller: TelecallerListItem) => {
+    const hasPermission = await checkCallPermissions('VIDEO');
+    if (!hasPermission) return;
+
     router.push({
       pathname: "/(app)/(call)/video-call",
       params: {

@@ -1,11 +1,17 @@
 import { AudioConnectedState } from "@/components/call/AudioConnectedState";
 import { ConnectingState } from "@/components/call/ConnectingState";
 import { useCallTimer } from "@/hooks/useCallTimer";
+import { useLiveKitRoom } from "@/hooks/useLiveKitRoom";
 import {
   emitCallEnd as emitTelecallerCallEnd,
   getTelecallerSocket
 } from "@/socket/telecaller.socket";
-import { CallRingingPayload, MessagePayload } from "@/socket/types";
+import {
+  CallAcceptedPayload,
+  CallRingingPayload,
+  LiveKitCredentials,
+  MessagePayload
+} from "@/socket/types";
 import {
   emitCallCancel,
   emitCallEnd,
@@ -29,25 +35,54 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 type CallState = "CONNECTING" | "CONNECTED";
 type Role = "USER" | "TELECALLER";
 
-interface CallParams extends Record<string, string | string[]> {
+interface CallParams {
   callId: string;
   participantId: string;
   participantName: string;
   participantProfile: string;
   callType: string;
   role: Role;
+  livekitToken?: string;
+  livekitUrl?: string;
+  livekitRoomName?: string;
+  [key: string]: string | string[] | undefined;
 }
 
 export default function AudioCall() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<CallParams>();
+  const params = useLocalSearchParams() as CallParams;
 
-  const [callState, setCallState] = useState<CallState>(params.role === "TELECALLER" ? "CONNECTED" : "CONNECTING");
-  const [isMuted, setIsMuted] = useState(false);
-  const [isSpeakerOn, setIsSpeakerOn] = useState(false);
+  // 1. Initial State Logic:
+  // If Telecaller has no token (navigated instantly), start as CONNECTING.
+  const [callState, setCallState] = useState<CallState>(
+    (params.role === "TELECALLER" && params.livekitToken) ? "CONNECTED" : "CONNECTING"
+  );
+
+  const [livekitCredentials, setLivekitCredentials] = useState<LiveKitCredentials | null>(
+    params.livekitToken && params.livekitUrl && params.livekitRoomName
+      ? {
+        token: params.livekitToken,
+        url: params.livekitUrl,
+        roomName: params.livekitRoomName,
+      }
+      : null
+  );
 
   const { seconds, formatted, start, stop } = useCallTimer();
+
+  // 2. Use LiveKit Hook
+  const {
+    connectionState,
+    error: livekitError,
+    isMuted,
+    isSpeakerOn,
+    toggleMute,
+    toggleSpeaker,
+    connect,
+    disconnect,
+  } = useLiveKitRoom();
+
   const {
     callId: initialCallId,
     participantId,
@@ -56,18 +91,20 @@ export default function AudioCall() {
     role = "USER"
   } = params;
 
-  const callIdRef = useRef<string | null>(null);
+  const callIdRef = useRef<string | null>(initialCallId || null);
   const hasInitiatedRef = useRef(false);
   const hasEndedRef = useRef(false);
+  const hasConnectedToLiveKit = useRef(false);
 
   const isAndroid = Platform.OS === "android";
   const isUser = role === "USER";
 
-  const navigateToFeedback = () => {
+  const navigateToFeedback = async () => {
     if (hasEndedRef.current) return;
     hasEndedRef.current = true;
 
     stop();
+    await disconnect();
 
     router.replace({
       pathname: "/(app)/(call)/feedback",
@@ -83,37 +120,54 @@ export default function AudioCall() {
     });
   };
 
-  // Start timer immediately for telecaller (they're already connected)
+  // 3. Connect to LiveKit when credentials arrive
   useEffect(() => {
-    if (!isUser && callState === "CONNECTED") {
+    if (livekitCredentials && !hasConnectedToLiveKit.current) {
+      hasConnectedToLiveKit.current = true;
+      console.log('🎧 Connecting to LiveKit:', livekitCredentials.roomName);
+      connect(livekitCredentials);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [livekitCredentials]); // Removed 'connect' to avoid loop
+
+  // 4. Handle LiveKit errors
+  useEffect(() => {
+    if (livekitError) {
+      showErrorToast(livekitError);
+    }
+  }, [livekitError]);
+
+  // 5. Start timer when connected
+  useEffect(() => {
+    if (callState === "CONNECTED" && connectionState === "CONNECTED") {
       start();
     }
-
     return () => stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [callState, connectionState]);
 
+  // ============================================
+  // USER: Setup Socket Listeners
+  // ============================================
   useEffect(() => {
-    // Prevent double initiation
     if (!isUser) return;
     if (hasInitiatedRef.current) return;
     hasInitiatedRef.current = true;
 
-    // Check socket connection
     if (!isUserSocketConnected()) {
       showErrorToast("Connection issue. Please restart the application.");
       router.replace("/(app)/(user)/home");
       return;
     }
 
-    // Subscribe to call events
     const unsubscribeRinging = onCallRinging((data: CallRingingPayload) => {
       callIdRef.current = data.callId;
     });
 
-    const unsubscribeAccepted = onCallAccepted((data) => {
+    const unsubscribeAccepted = onCallAccepted((data: CallAcceptedPayload) => {
+      console.log('✅ USER: Call accepted, received LiveKit credentials');
+      setLivekitCredentials(data.livekit);
       setCallState("CONNECTED");
-      start();
     });
 
     const unsubscribeRejected = onCallRejected((data) => {
@@ -132,12 +186,11 @@ export default function AudioCall() {
     });
 
     const unsubscribeEnded = onCallEnded((data) => {
-      console.log("📞 Call ended by other party:", data);
+      console.log("📞 Call ended by other party");
       showToast("Call ended");
       navigateToFeedback();
     });
 
-    // Initiate the call
     const success = emitCallInitiate({ telecallerId: participantId, callType: "AUDIO" });
 
     if (!success) {
@@ -158,29 +211,43 @@ export default function AudioCall() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Telecaller: Listen for call ended by user
+  // ============================================
+  // TELECALLER: Listen for Token & End Call
+  // ============================================
   useEffect(() => {
     if (isUser) return;
 
     const socket = getTelecallerSocket();
     if (!socket) return;
 
+    // Listen for Token (Call Accepted)
+    const handleCallAccepted = (data: any) => {
+      console.log('✅ TELECALLER: Received Token via Socket');
+      if (data.livekit) {
+        setLivekitCredentials(data.livekit);
+        setCallState("CONNECTED");
+      }
+    };
+
     const handleCallEnded = (data: { callId: string }) => {
-      console.log("📞 Call ended by other party:", data);
+      console.log("📞 Call ended by other party");
       showToast("Call ended");
       navigateToFeedback();
     };
 
+    socket.on('call:accepted', handleCallAccepted);
     socket.on('call:ended', handleCallEnded);
 
     return () => {
+      socket.off('call:accepted', handleCallAccepted);
       socket.off('call:ended', handleCallEnded);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUser]);
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     stop();
+    await disconnect();
 
     if (callIdRef.current) {
       emitCallCancel({ callId: callIdRef.current });
@@ -189,15 +256,15 @@ export default function AudioCall() {
     router.replace("/(app)/(user)/home");
   };
 
-  const handleToggleMute = () => {
-    setIsMuted((prev) => !prev);
+  const handleToggleMute = async () => {
+    await toggleMute();
   };
 
   const handleToggleSpeaker = () => {
-    setIsSpeakerOn((prev) => !prev);
+    toggleSpeaker();
   };
 
-  const handleEndCall = () => {
+  const handleEndCall = async () => {
     if (hasEndedRef.current) return;
 
     const callId = callIdRef.current || initialCallId;
@@ -210,6 +277,7 @@ export default function AudioCall() {
       }
     }
 
+    await disconnect();
     navigateToFeedback();
   };
 
