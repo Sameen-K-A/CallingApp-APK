@@ -31,7 +31,8 @@
         "INTERNET",
         "ACCESS_NETWORK_STATE",
         "BLUETOOTH",
-        "BLUETOOTH_CONNECT"
+        "BLUETOOTH_CONNECT",
+        "WAKE_LOCK"
       ],
       "intentFilters": [
         {
