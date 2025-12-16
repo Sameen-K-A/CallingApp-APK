@@ -17,13 +17,21 @@ import {
 import { checkCallPermissions } from "@/utils/permission";
 import { showErrorToast, showToast } from "@/utils/toast";
 import { Redirect, router, Slot } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 
 export default function TelecallerLayout() {
   const { isLoading, isProfileComplete, isUser, getTelecallerApprovalStatus } = useAuth();
   const [incomingCall, setIncomingCall] = useState<TelecallerCallInformationPayload | null>(null);
   const [socketReady, setSocketReady] = useState(false);
+
+  // Ref to track current incoming call (avoids setState side effects)
+  const incomingCallRef = useRef<TelecallerCallInformationPayload | null>(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    incomingCallRef.current = incomingCall;
+  }, [incomingCall]);
 
   // Listen for socket ready
   useEffect(() => {
@@ -44,7 +52,7 @@ export default function TelecallerLayout() {
     };
   }, [getTelecallerApprovalStatus]);
 
-  // Subscribe to incoming calls when socket is ready
+  // Subscribe to incoming calls and call lifecycle events
   useEffect(() => {
     if (getTelecallerApprovalStatus() !== "APPROVED") return;
     if (!socketReady) return;
@@ -52,24 +60,43 @@ export default function TelecallerLayout() {
     const socket = getTelecallerSocket();
     if (!socket) return;
 
+    // ============================================
+    // Handle Incoming Call
+    // ============================================
     const handleIncomingCall = (data: TelecallerCallInformationPayload) => {
-      setIncomingCall((current) => {
-        if (current) {
-          console.log('📞 Already have incoming call, ignoring');
-          return current;
-        }
-        return data;
-      });
+      console.log('📞 Incoming call received:', data.callId);
+
+      if (incomingCallRef.current) {
+        console.log('📞 Already have incoming call, auto-rejecting new one');
+        emitCallReject({ callId: data.callId });
+        return;
+      }
+
+      setIncomingCall(data);
     };
 
+    // ============================================
+    // Handle Call Missed (timeout)
+    // ============================================
     const handleCallMissed = (data: CallIdPayload) => {
-      setIncomingCall(null);
-      showToast('Missed call');
+      console.log('📞 Call missed:', data.callId);
+
+      if (incomingCallRef.current?.callId === data.callId) {
+        setIncomingCall(null);
+        showToast('Missed call');
+      }
     };
 
+    // ============================================
+    // Handle Call Cancelled (user cancelled)
+    // ============================================
     const handleCallCancelled = (data: CallIdPayload) => {
-      setIncomingCall(null);
-      showToast('Call was cancelled');
+      console.log('📞 Call cancelled:', data.callId);
+
+      if (incomingCallRef.current?.callId === data.callId) {
+        setIncomingCall(null);
+        showToast('Call was cancelled');
+      }
     };
 
     socket.on('call:incoming', handleIncomingCall);
@@ -77,13 +104,12 @@ export default function TelecallerLayout() {
     socket.on('call:cancelled', handleCallCancelled);
 
     return () => {
-      console.log('📞 Cleaning up call subscriptions');
+      console.log('📞 Cleaning up call subscriptions in layout');
       socket.off('call:incoming', handleIncomingCall);
       socket.off('call:missed', handleCallMissed);
       socket.off('call:cancelled', handleCallCancelled);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getTelecallerApprovalStatus, socketReady, router]);
+  }, [getTelecallerApprovalStatus, socketReady]);
 
   // ========================================= Handle accept call ====================================
   const handleAcceptCall = async () => {
@@ -99,7 +125,8 @@ export default function TelecallerLayout() {
       return;
     }
 
-    // Pass basic info, but NO TOKEN yet. The screen will show "Connecting..."
+    console.log('📞 Navigating to call screen for callId:', incomingCall.callId);
+
     const route = incomingCall.callType === 'VIDEO'
       ? '/(app)/(call)/video-call'
       : '/(app)/(call)/audio-call';
