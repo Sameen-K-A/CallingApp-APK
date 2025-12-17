@@ -8,6 +8,7 @@ interface AudioConnectedStateProps {
   name: string;
   profile?: string;
   timer: string;
+  isWaitingForRemote: boolean;
   isMuted: boolean;
   isSpeakerOn: boolean;
   onToggleMute: () => void;
@@ -19,6 +20,7 @@ export const AudioConnectedState: React.FC<AudioConnectedStateProps> = ({
   name,
   profile,
   timer,
+  isWaitingForRemote,
   isMuted,
   isSpeakerOn,
   onToggleMute,
@@ -36,12 +38,21 @@ export const AudioConnectedState: React.FC<AudioConnectedStateProps> = ({
           {name}
         </Text>
 
-        <Text
-          allowFontScaling={false}
-          className="font-semibold text-white tracking-wider"
-        >
-          {timer}
-        </Text>
+        {isWaitingForRemote ? (
+          <Text
+            allowFontScaling={false}
+            className="font-semibold text-white/70 tracking-wider text-center"
+          >
+            Connecting...
+          </Text>
+        ) : (
+          <Text
+            allowFontScaling={false}
+            className="font-semibold text-white tracking-wider"
+          >
+            {timer}
+          </Text>
+        )}
       </View>
 
       <View className="flex-1 items-center justify-center">
@@ -59,13 +70,27 @@ export const AudioConnectedState: React.FC<AudioConnectedStateProps> = ({
         </View>
 
         <View className="flex-row items-center mt-3 bg-white/10 px-4 py-2 rounded-full">
-          <View className="w-2 h-2 rounded-full bg-green-400 mr-2" />
-          <Text
-            allowFontScaling={false}
-            className="text-sm text-white/70 font-medium"
-          >
-            Voice Call
-          </Text>
+          {isWaitingForRemote ? (
+            <>
+              <View className="w-2 h-2 rounded-full bg-yellow-400 mr-2" />
+              <Text
+                allowFontScaling={false}
+                className="text-sm text-white/70 font-medium"
+              >
+                Setting up call...
+              </Text>
+            </>
+          ) : (
+            <>
+              <View className="w-2 h-2 rounded-full bg-green-400 mr-2" />
+              <Text
+                allowFontScaling={false}
+                className="text-sm text-white/70 font-medium"
+              >
+                Voice Call
+              </Text>
+            </>
+          )}
         </View>
       </View>
 

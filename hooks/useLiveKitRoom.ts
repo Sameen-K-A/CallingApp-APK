@@ -8,6 +8,8 @@ import {
   RoomEvent,
 } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
+import InCallManager from 'react-native-incall-manager';
 
 // Register LiveKit globals for React Native (WebRTC polyfills)
 registerGlobals();
@@ -41,6 +43,18 @@ export interface UseLiveKitRoomReturn {
 }
 
 // ============================================
+// InCallManager Availability Check
+// ============================================
+
+const isInCallManagerAvailable = (): boolean => {
+  try {
+    return InCallManager && typeof InCallManager.start === 'function';
+  } catch {
+    return false;
+  }
+};
+
+// ============================================
 // Hook Implementation
 // ============================================
 export function useLiveKitRoom(): UseLiveKitRoomReturn {
@@ -58,7 +72,64 @@ export function useLiveKitRoom(): UseLiveKitRoomReturn {
 
   // Media States
   const [isMuted, setIsMuted] = useState(false);
-  const [isSpeakerOn, setIsSpeakerOn] = useState(true); // Default to speaker/earpiece
+  const [isSpeakerOn, setIsSpeakerOn] = useState(false); // Default to earpiece (like phone call)
+
+  // Refs to track InCallManager state
+  const isInCallManagerStarted = useRef(false);
+  const inCallManagerAvailable = useRef(isInCallManagerAvailable());
+
+  // ============================================
+  // InCallManager Helpers
+  // ============================================
+
+  const startInCallManager = useCallback(() => {
+    if (isInCallManagerStarted.current) return;
+    if (!inCallManagerAvailable.current) {
+      console.log('📱 InCallManager not available, skipping...');
+      return;
+    }
+
+    try {
+      // Start InCallManager for audio call
+      InCallManager.start({ media: 'audio' });
+
+      // Default to earpiece (like a normal phone call)
+      InCallManager.setSpeakerphoneOn(false);
+      setIsSpeakerOn(false);
+
+      // Enable proximity sensor (screen off when near ear) - Only on Android
+      if (Platform.OS === 'android') {
+        InCallManager.startProximitySensor();
+      }
+
+      isInCallManagerStarted.current = true;
+      console.log('📱 InCallManager started (earpiece mode, proximity enabled)');
+    } catch (err) {
+      console.error('❌ Failed to start InCallManager:', err);
+      // Don't throw - call can still work without InCallManager
+      inCallManagerAvailable.current = false;
+    }
+  }, []);
+
+  const stopInCallManager = useCallback(() => {
+    if (!isInCallManagerStarted.current) return;
+    if (!inCallManagerAvailable.current) return;
+
+    try {
+      // Stop proximity sensor - Only on Android
+      if (Platform.OS === 'android') {
+        InCallManager.stopProximitySensor();
+      }
+
+      // Stop InCallManager
+      InCallManager.stop();
+
+      isInCallManagerStarted.current = false;
+      console.log('📱 InCallManager stopped');
+    } catch (err) {
+      console.error('❌ Failed to stop InCallManager:', err);
+    }
+  }, []);
 
   // ============================================
   // Room Event Handlers
@@ -75,6 +146,7 @@ export function useLiveKitRoom(): UseLiveKitRoomReturn {
         case ConnectionState.Connected:
           setConnectionState('CONNECTED');
           setLocalParticipant(room.localParticipant);
+          startInCallManager();
           break;
         case ConnectionState.Disconnected:
           setConnectionState('DISCONNECTED');
@@ -101,9 +173,10 @@ export function useLiveKitRoom(): UseLiveKitRoomReturn {
     room.on(RoomEvent.Disconnected, (reason) => {
       console.log('❌ Disconnected from room:', reason);
       setConnectionState('DISCONNECTED');
+      stopInCallManager();
     });
 
-  }, []);
+  }, [startInCallManager, stopInCallManager]);
 
   // ============================================
   // Connect to Room
@@ -145,14 +218,16 @@ export function useLiveKitRoom(): UseLiveKitRoomReturn {
       const remoteParticipants = Array.from(newRoom.remoteParticipants.values());
       if (remoteParticipants.length > 0) {
         setRemoteParticipant(remoteParticipants[0]);
+        console.log('👤 Found existing remote participant:', remoteParticipants[0].identity);
       }
 
     } catch (err: any) {
       console.error('❌ Failed to connect to LiveKit:', err);
       setError(err.message || 'Failed to connect to call');
       setConnectionState('ERROR');
+      stopInCallManager();
     }
-  }, [setupRoomEventListeners]);
+  }, [setupRoomEventListeners, stopInCallManager]);
 
   // ============================================
   // Disconnect from Room
@@ -168,10 +243,14 @@ export function useLiveKitRoom(): UseLiveKitRoomReturn {
         setRemoteParticipant(null);
         setConnectionState('DISCONNECTED');
       }
+      // Stop InCallManager
+      stopInCallManager();
     } catch (err) {
       console.error('❌ Error disconnecting:', err);
+      // Still try to stop InCallManager even if disconnect fails
+      stopInCallManager();
     }
-  }, []);
+  }, [stopInCallManager]);
 
   // ============================================
   // Toggle Mute
@@ -190,14 +269,27 @@ export function useLiveKitRoom(): UseLiveKitRoomReturn {
   }, [isMuted]);
 
   // ============================================
-  // Toggle Speaker (Placeholder for future)
+  // Toggle Speaker
   // ============================================
   const toggleSpeaker = useCallback(() => {
-    setIsSpeakerOn(prev => {
-      console.log('🔊 Speaker:', !prev ? 'On' : 'Off');
-      return !prev;
-    });
-  }, []);
+    if (!inCallManagerAvailable.current) {
+      console.log('📱 InCallManager not available, cannot toggle speaker');
+      // Still update UI state for visual feedback
+      setIsSpeakerOn(prev => !prev);
+      return;
+    }
+
+    try {
+      const newSpeakerState = !isSpeakerOn;
+      InCallManager.setSpeakerphoneOn(newSpeakerState);
+      setIsSpeakerOn(newSpeakerState);
+      console.log('🔊 Speaker:', newSpeakerState ? 'On (Speaker)' : 'Off (Earpiece)');
+    } catch (err) {
+      console.error('❌ Error toggling speaker:', err);
+      // Still update UI state for visual feedback
+      setIsSpeakerOn(prev => !prev);
+    }
+  }, [isSpeakerOn]);
 
   // ============================================
   // Cleanup on Unmount
@@ -208,8 +300,9 @@ export function useLiveKitRoom(): UseLiveKitRoomReturn {
         roomRef.current.disconnect();
         roomRef.current = null;
       }
+      stopInCallManager();
     };
-  }, []);
+  }, [stopInCallManager]);
 
   // ============================================
   // Return Hook Values

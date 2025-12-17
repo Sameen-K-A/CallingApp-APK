@@ -226,7 +226,6 @@ export default function Home() {
   if (isLoading) {
     return (
       <View className="flex-1 bg-muted">
-        {renderHeader()}
         <TelecallerListSkeleton count={5} />
       </View>
     );
