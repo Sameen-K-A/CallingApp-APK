@@ -100,7 +100,7 @@ export default function AudioCall() {
     toggleSpeaker,
     connect,
     disconnect,
-  } = useLiveKitRoom();
+  } = useLiveKitRoom({ callType: 'AUDIO' });
 
   // Refs
   const callIdRef = useRef<string | null>(initialCallId || null);

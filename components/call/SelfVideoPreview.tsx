@@ -1,6 +1,7 @@
 import { Avatar } from "@/components/shared/avatars";
 import { getInitials } from "@/utils/formatter";
-import { Ionicons } from "@expo/vector-icons";
+import { VideoView } from "@livekit/react-native";
+import { LocalVideoTrack } from "livekit-client";
 import React from "react";
 import { Text, View } from "react-native";
 
@@ -8,12 +9,28 @@ interface SelfVideoPreviewProps {
   name: string;
   profile?: string;
   isCameraOff: boolean;
+  localVideoTrack: LocalVideoTrack | null;
 }
 
-export const SelfVideoPreview: React.FC<SelfVideoPreviewProps> = ({ name, profile, isCameraOff }) => {
+export const SelfVideoPreview: React.FC<SelfVideoPreviewProps> = ({
+  name,
+  profile,
+  isCameraOff,
+  localVideoTrack,
+}) => {
+  const showVideo = !isCameraOff && localVideoTrack !== null;
+
   return (
     <View className="w-28 h-40 rounded-2xl overflow-hidden border-2 border-white/20">
-      {isCameraOff ? (
+      {showVideo && localVideoTrack ? (
+        <VideoView
+          videoTrack={localVideoTrack}
+          style={{ flex: 1 }}
+          objectFit="cover"
+          mirror={true}
+          zOrder={1}
+        />
+      ) : (
         <View className="flex-1 bg-neutral-800 items-center justify-center">
           {profile?.startsWith("avatar-") ? (
             <Avatar avatarId={profile} size={50} />
@@ -27,16 +44,6 @@ export const SelfVideoPreview: React.FC<SelfVideoPreviewProps> = ({ name, profil
               </Text>
             </View>
           )}
-        </View>
-      ) : (
-        <View className="flex-1 bg-neutral-700 items-center justify-center">
-          <Ionicons name="person" size={40} color="#FFFFFF50" />
-          <Text
-            allowFontScaling={false}
-            className="text-xs text-white/50 mt-1"
-          >
-            You
-          </Text>
         </View>
       )}
     </View>
