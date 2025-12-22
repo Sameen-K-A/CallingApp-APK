@@ -15,7 +15,6 @@ interface VideoConnectedStateProps {
   timer: string;
   isWaitingForRemote: boolean;
   isMuted: boolean;
-  isSpeakerOn: boolean;
   isCameraOff: boolean;
   isRemoteCameraOff: boolean;
   localVideoTrack: LocalVideoTrack | null;
@@ -23,7 +22,6 @@ interface VideoConnectedStateProps {
   topInset: number;
   bottomInset: number;
   onToggleMute: () => void;
-  onToggleSpeaker: () => void;
   onToggleCamera: () => void;
   onEndCall: () => void;
 }
@@ -60,16 +58,10 @@ const WaitingState: React.FC<WaitingStateProps> = ({ name, profile }) => {
   return (
     <View className="flex-1 bg-neutral-900 items-center justify-center">
       <ActivityIndicator size="large" color="#A855F7" style={{ marginBottom: 16 }} />
-      <Text
-        allowFontScaling={false}
-        className="text-white text-xl font-semibold mb-2"
-      >
+      <Text allowFontScaling={false} className="text-white font-semibold mb-2">
         Connecting...
       </Text>
-      <Text
-        allowFontScaling={false}
-        className="text-white/50 text-sm"
-      >
+      <Text allowFontScaling={false} className="text-mutedForeground text-xs">
         Waiting for {name} to join
       </Text>
     </View>
@@ -92,10 +84,7 @@ const CameraOffState: React.FC<CameraOffStateProps> = ({ name, profile }) => {
         {profile?.startsWith("avatar-") ? (
           <Avatar avatarId={profile} size={120} />
         ) : (
-          <Text
-            allowFontScaling={false}
-            className="text-4xl font-bold text-white"
-          >
+          <Text allowFontScaling={false} className="text-4xl font-bold text-white">
             {getInitials(name)}
           </Text>
         )}
@@ -103,10 +92,7 @@ const CameraOffState: React.FC<CameraOffStateProps> = ({ name, profile }) => {
 
       <View className="flex-row items-center bg-white/10 px-3 py-1.5 rounded-full">
         <Ionicons name="videocam-off" size={14} color="#FFFFFF80" />
-        <Text
-          allowFontScaling={false}
-          className="text-xs text-white/50 ml-1.5"
-        >
+        <Text allowFontScaling={false} className="text-xs text-white/50 ml-1.5">
           Camera is off
         </Text>
       </View>
@@ -122,10 +108,7 @@ const LoadingVideoState: React.FC = () => {
   return (
     <View className="flex-1 bg-neutral-800 items-center justify-center">
       <ActivityIndicator size="large" color="#A855F7" />
-      <Text
-        allowFontScaling={false}
-        className="text-white/50 text-sm mt-2"
-      >
+      <Text allowFontScaling={false} className="text-white/50 text-sm mt-2">
         Loading video...
       </Text>
     </View>
@@ -142,7 +125,6 @@ export const VideoConnectedState: React.FC<VideoConnectedStateProps> = ({
   timer,
   isWaitingForRemote,
   isMuted,
-  isSpeakerOn,
   isCameraOff,
   isRemoteCameraOff,
   localVideoTrack,
@@ -150,12 +132,11 @@ export const VideoConnectedState: React.FC<VideoConnectedStateProps> = ({
   topInset,
   bottomInset,
   onToggleMute,
-  onToggleSpeaker,
   onToggleCamera,
   onEndCall,
 }) => {
-  // Determine what to show in the main video area
   const renderMainContent = () => {
+
     // Waiting for remote participant to join
     if (isWaitingForRemote) {
       return <WaitingState name={name} profile={profile} />;
@@ -171,7 +152,7 @@ export const VideoConnectedState: React.FC<VideoConnectedStateProps> = ({
       return <RemoteVideoView track={remoteVideoTrack} />;
     }
 
-    // Fallback: waiting for video track
+    // Fallback: waiting for video track (connected, not muted, but track pending)
     return <LoadingVideoState />;
   };
 
@@ -208,28 +189,19 @@ export const VideoConnectedState: React.FC<VideoConnectedStateProps> = ({
         {isWaitingForRemote ? (
           <View className="flex-row items-center mt-1">
             <ActivityIndicator size="small" color="#A855F7" style={{ marginRight: 8 }} />
-            <Text
-              allowFontScaling={false}
-              className="text-sm text-white/70 tracking-wider"
-            >
+            <Text allowFontScaling={false} className="text-sm text-white/70 tracking-wider">
               Connecting...
             </Text>
           </View>
         ) : (
-          <Text
-            allowFontScaling={false}
-            className="text-sm text-white/70 tracking-wider"
-          >
+          <Text allowFontScaling={false} className="text-sm text-white/70 tracking-wider">
             {timer}
           </Text>
         )}
       </View>
 
       {/* Self Video Preview (Bottom Right) */}
-      <View
-        className="absolute right-6"
-        style={{ bottom: bottomInset + 120 }}
-      >
+      <View className="absolute right-6" style={{ bottom: bottomInset + 120 }}>
         <SelfVideoPreview
           name="You"
           profile={undefined}
@@ -252,17 +224,12 @@ export const VideoConnectedState: React.FC<VideoConnectedStateProps> = ({
       />
 
       {/* Call Controls */}
-      <View
-        className="absolute bottom-0 left-0 right-0"
-        style={{ paddingBottom: bottomInset + 24 }}
-      >
+      <View className="absolute bottom-0 left-0 right-0" style={{ paddingBottom: bottomInset + 24 }}>
         <CallControls
           callType="VIDEO"
           isMuted={isMuted}
-          isSpeakerOn={isSpeakerOn}
           isCameraOff={isCameraOff}
           onToggleMute={onToggleMute}
-          onToggleSpeaker={onToggleSpeaker}
           onToggleCamera={onToggleCamera}
           onEndCall={onEndCall}
         />

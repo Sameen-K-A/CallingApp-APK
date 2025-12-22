@@ -1,5 +1,6 @@
 import { AuthProvider } from "@/context/AuthContext";
 import { toastConfig } from "@/utils/toast";
+import { registerGlobals } from '@livekit/react-native';
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -8,6 +9,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import Toast from 'react-native-toast-message';
 import "./global.css";
 
+registerGlobals();
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {

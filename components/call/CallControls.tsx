@@ -5,9 +5,7 @@ import { TouchableOpacity, View } from "react-native";
 
 interface BaseCallControlsProps {
   isMuted: boolean;
-  isSpeakerOn: boolean;
   onToggleMute: () => void;
-  onToggleSpeaker: () => void;
   onEndCall: () => void;
 }
 
@@ -57,7 +55,7 @@ const ControlButton: React.FC<ControlButtonProps> = ({
 };
 
 export const CallControls: React.FC<CallControlsProps> = (props) => {
-  const { callType, isMuted, isSpeakerOn, onToggleMute, onToggleSpeaker, onEndCall } = props;
+  const { callType, isMuted, onToggleMute, onEndCall } = props;
 
   return (
     <View className="items-center px-6">
@@ -74,12 +72,6 @@ export const CallControls: React.FC<CallControlsProps> = (props) => {
           icon={isMuted ? "mic-off" : "mic"}
           onPress={onToggleMute}
           isActive={isMuted}
-        />
-
-        <ControlButton
-          icon={isSpeakerOn ? "volume-high" : "volume-low"}
-          onPress={onToggleSpeaker}
-          isActive={isSpeakerOn}
         />
 
         <ControlButton

@@ -10,9 +10,7 @@ interface AudioConnectedStateProps {
   timer: string;
   isWaitingForRemote: boolean;
   isMuted: boolean;
-  isSpeakerOn: boolean;
   onToggleMute: () => void;
-  onToggleSpeaker: () => void;
   onEndCall: () => void;
 }
 
@@ -22,9 +20,7 @@ export const AudioConnectedState: React.FC<AudioConnectedStateProps> = ({
   timer,
   isWaitingForRemote,
   isMuted,
-  isSpeakerOn,
   onToggleMute,
-  onToggleSpeaker,
   onEndCall,
 }) => {
   return (
@@ -98,9 +94,7 @@ export const AudioConnectedState: React.FC<AudioConnectedStateProps> = ({
         <CallControls
           callType="AUDIO"
           isMuted={isMuted}
-          isSpeakerOn={isSpeakerOn}
           onToggleMute={onToggleMute}
-          onToggleSpeaker={onToggleSpeaker}
           onEndCall={onEndCall}
         />
       </View>

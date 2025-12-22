@@ -52,7 +52,9 @@ export const connectTelecallerSocket = (token: string): TelecallerSocket => {
   }
 
   if (socket) {
+    socket.removeAllListeners();
     socket.disconnect();
+    socket = null;
   }
 
   isManuallyDisconnected = false;

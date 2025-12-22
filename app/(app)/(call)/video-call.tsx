@@ -92,7 +92,6 @@ export default function VideoCall() {
             timer={formattedTime}
             isWaitingForRemote={isWaitingForRemote}
             isMuted={liveKit.isMuted}
-            isSpeakerOn={liveKit.isSpeakerOn}
             isCameraOff={liveKit.isCameraOff}
             isRemoteCameraOff={isRemoteCameraOff}
             localVideoTrack={liveKit.localVideoTrack}
@@ -100,7 +99,6 @@ export default function VideoCall() {
             topInset={insets.top}
             bottomInset={isAndroid ? insets.bottom : 0}
             onToggleMute={liveKit.toggleMute}
-            onToggleSpeaker={liveKit.toggleSpeaker}
             onToggleCamera={liveKit.toggleCamera}
             onEndCall={handleEndCall}
           />

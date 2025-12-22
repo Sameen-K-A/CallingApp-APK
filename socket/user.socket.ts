@@ -55,7 +55,9 @@ export const connectUserSocket = (token: string): UserSocket => {
   }
 
   if (socket) {
+    socket.removeAllListeners();
     socket.disconnect();
+    socket = null;
   }
 
   isManuallyDisconnected = false;

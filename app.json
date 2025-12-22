@@ -13,7 +13,11 @@
       "bundleIdentifier": "com.telecalling.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera for video calls",
-        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone for calls"
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone for calls",
+        "UIBackgroundModes": [
+          "audio",
+          "voip"
+        ]
       }
     },
     "android": {
@@ -74,6 +78,14 @@
           "dark": {
             "backgroundColor": "#000000"
           }
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to make video calls.",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone to make calls.",
+          "recordAudioAndroid": true
         }
       ],
       "expo-web-browser"

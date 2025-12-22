@@ -25,6 +25,7 @@ import {
 import { showErrorToast, showToast } from "@/utils/toast";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
+import { BackHandler } from "react-native";
 
 type CallState = "CONNECTING" | "CONNECTED";
 type Role = "USER" | "TELECALLER";
@@ -77,14 +78,22 @@ export function useActiveCall({
   const callIdRef = useRef<string | null>(initialCallId || null);
   const hasInitiatedRef = useRef(false);
   const hasConnectedRef = useRef(false);
+  const isNavigatingRef = useRef(false);
 
   // ============================================
-  // Helper: Navigation
+  // Helper: Navigation & Cleanup
   // ============================================
   const navigateAway = (destination: 'feedback' | 'home') => {
+    if (isNavigatingRef.current) return;
+    isNavigatingRef.current = true;
+
+    // 1. Stop Timer
     stop();
+
+    // 2. Disconnect Media
     disconnect();
 
+    // 3. Navigation
     if (destination === 'feedback') {
       router.replace({
         pathname: "/(app)/(call)/feedback",
@@ -132,6 +141,29 @@ export function useActiveCall({
   };
 
   // ============================================
+  // Android Back Button Handler
+  // ============================================
+  useEffect(() => {
+    const backAction = () => {
+      // If call is connected, treat back button as "End Call"
+      if (callState === "CONNECTED") {
+        handleEndCall();
+      } else {
+        // If connecting, treat as "Cancel"
+        handleCancelCall();
+      }
+      return true; // Prevent default behavior (app closing)
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [callState]);
+
+  // ============================================
   // Side Effect: LiveKit Connection
   // ============================================
   useEffect(() => {
@@ -141,12 +173,21 @@ export function useActiveCall({
     }
   }, [livekitCredentials, connect]);
 
+  // Monitor LiveKit Errors OR Unexpected Disconnects
   useEffect(() => {
     if (liveKitError) {
       showErrorToast(liveKitError);
       navigateAway('home');
     }
-  }, [liveKitError]);
+
+    // If LiveKit disconnects from the server side (e.g. network lost, room closed)
+    // We should end the call flow locally if we are supposed to be connected
+    if (connectionState === 'DISCONNECTED' && hasConnectedRef.current && !isEnding) {
+      console.log('🔌 LiveKit disconnected unexpectedly');
+      showToast("Call disconnected");
+      navigateAway('feedback');
+    }
+  }, [liveKitError, connectionState, isEnding]);
 
   // ============================================
   // Side Effect: Timer Logic

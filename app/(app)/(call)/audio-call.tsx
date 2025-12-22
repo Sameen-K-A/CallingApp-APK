@@ -26,13 +26,11 @@ export default function AudioCall() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams() as unknown as CallParams;
 
-  // Prepare initial credentials for Telecaller
   const initialCreds: LiveKitCredentials | null =
     params.role === "TELECALLER" && params.livekitToken
       ? { token: params.livekitToken, url: params.livekitUrl!, roomName: params.livekitRoomName! }
       : null;
 
-  // Use the new hook
   const {
     callState,
     isEnding,
@@ -86,9 +84,7 @@ export default function AudioCall() {
               timer={formattedTime}
               isWaitingForRemote={isWaitingForRemote}
               isMuted={liveKit.isMuted}
-              isSpeakerOn={liveKit.isSpeakerOn}
               onToggleMute={liveKit.toggleMute}
-              onToggleSpeaker={liveKit.toggleSpeaker}
               onEndCall={handleEndCall}
             />
           )}

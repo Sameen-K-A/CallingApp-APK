@@ -1,5 +1,4 @@
 import { LiveKitCredentials } from '@/socket/types';
-import { registerGlobals } from '@livekit/react-native';
 import {
   ConnectionState,
   LocalParticipant,
@@ -12,11 +11,6 @@ import {
   VideoPresets,
 } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
-import InCallManager from 'react-native-incall-manager';
-
-// Register LiveKit globals for React Native (WebRTC polyfills)
-registerGlobals();
 
 // ============================================
 // Types
@@ -46,10 +40,6 @@ export interface UseLiveKitRoomReturn {
   isMuted: boolean;
   toggleMute: () => Promise<void>;
 
-  // Speaker Control
-  isSpeakerOn: boolean;
-  toggleSpeaker: () => void;
-
   // Camera Control (Video only)
   isCameraOff: boolean;
   toggleCamera: () => Promise<void>;
@@ -58,18 +48,6 @@ export interface UseLiveKitRoomReturn {
   connect: (credentials: LiveKitCredentials) => Promise<void>;
   disconnect: () => Promise<void>;
 }
-
-// ============================================
-// InCallManager Availability Check
-// ============================================
-
-const isInCallManagerAvailable = (): boolean => {
-  try {
-    return InCallManager && typeof InCallManager.start === 'function';
-  } catch {
-    return false;
-  }
-};
 
 // ============================================
 // Hook Implementation
@@ -96,102 +74,47 @@ export function useLiveKitRoom(options: UseLiveKitRoomOptions): UseLiveKitRoomRe
 
   // Media States
   const [isMuted, setIsMuted] = useState(false);
-  const [isSpeakerOn, setIsSpeakerOn] = useState(isVideoCall); // Speaker ON for video, OFF for audio
-  const [isCameraOff, setIsCameraOff] = useState(false);
+  const [isCameraOff, setIsCameraOff] = useState(!isVideoCall);
 
-  // Refs
-  const isInCallManagerStarted = useRef(false);
-  const inCallManagerAvailable = useRef(isInCallManagerAvailable());
+  // Operation Lock (Prevent Double Toggles)
+  const isToggleProcessing = useRef(false);
 
   // ============================================
-  // InCallManager Helpers
+  // Helpers
   // ============================================
 
-  const startInCallManager = useCallback(() => {
-    if (isInCallManagerStarted.current) return;
-    if (!inCallManagerAvailable.current) {
-      console.log('📱 InCallManager not available, skipping...');
-      return;
+  const getCameraTrackFromParticipant = useCallback((participant: RemoteParticipant): RemoteVideoTrack | null => {
+    const publication = participant.getTrackPublication(Track.Source.Camera);
+    if (publication && publication.isSubscribed && publication.track) {
+      return publication.track as RemoteVideoTrack;
     }
-
-    try {
-      InCallManager.start({ media: isVideoCall ? 'video' : 'audio' });
-
-      // Video calls: Speaker ON, no proximity sensor
-      // Audio calls: Earpiece (speaker OFF), proximity sensor ON
-      if (isVideoCall) {
-        InCallManager.setSpeakerphoneOn(true);
-        setIsSpeakerOn(true);
-      } else {
-        InCallManager.setSpeakerphoneOn(false);
-        setIsSpeakerOn(false);
-        if (Platform.OS === 'android') {
-          InCallManager.startProximitySensor();
-        }
-      }
-
-      isInCallManagerStarted.current = true;
-      console.log(`📱 InCallManager started (${isVideoCall ? 'video mode, speaker' : 'audio mode, earpiece'})`);
-    } catch (err) {
-      console.error('❌ Failed to start InCallManager:', err);
-      inCallManagerAvailable.current = false;
-    }
-  }, [isVideoCall]);
-
-  const stopInCallManager = useCallback(() => {
-    if (!isInCallManagerStarted.current) return;
-    if (!inCallManagerAvailable.current) return;
-
-    try {
-      if (!isVideoCall && Platform.OS === 'android') {
-        InCallManager.stopProximitySensor();
-      }
-
-      InCallManager.stop();
-      isInCallManagerStarted.current = false;
-      console.log('📱 InCallManager stopped');
-    } catch (err) {
-      console.error('❌ Failed to stop InCallManager:', err);
-    }
-  }, [isVideoCall]);
-
-  // ============================================
-  // Update Remote Video Track
-  // ============================================
+    return null;
+  }, []);
 
   const updateRemoteVideoTrack = useCallback((participant: RemoteParticipant) => {
-    const videoTrack = Array.from(participant.videoTrackPublications.values())
-      .find(pub => pub.track && pub.source === Track.Source.Camera);
-
-    if (videoTrack?.track) {
-      setRemoteVideoTrack(videoTrack.track as RemoteVideoTrack);
-      console.log('🎥 Remote video track found');
-    } else {
-      setRemoteVideoTrack(null);
-      console.log('🎥 Remote video track not available');
-    }
-  }, []);
+    const track = getCameraTrackFromParticipant(participant);
+    setRemoteVideoTrack(track);
+  }, [getCameraTrackFromParticipant]);
 
   // ============================================
   // Room Event Handlers
   // ============================================
 
-  const setupRoomEventListeners = useCallback((room: Room) => {
-    // Connection State Changes
-    room.on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
+  const setupRoomEventListeners = useCallback((currentRoom: Room) => {
+    // 1. Connection State
+    currentRoom.on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
       console.log('🔌 LiveKit Connection State:', state);
-
       switch (state) {
         case ConnectionState.Connecting:
           setConnectionState('CONNECTING');
           break;
         case ConnectionState.Connected:
           setConnectionState('CONNECTED');
-          setLocalParticipant(room.localParticipant);
-          startInCallManager();
+          setLocalParticipant(currentRoom.localParticipant);
           break;
         case ConnectionState.Disconnected:
           setConnectionState('DISCONNECTED');
+          setRoom(null);
           break;
         case ConnectionState.Reconnecting:
           console.log('🔄 Reconnecting to LiveKit...');
@@ -199,69 +122,61 @@ export function useLiveKitRoom(options: UseLiveKitRoomOptions): UseLiveKitRoomRe
       }
     });
 
-    // Remote Participant Joined
-    room.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
+    // 2. Participant Connected
+    currentRoom.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
       console.log('👤 Remote Participant Connected:', participant.identity);
       setRemoteParticipant(participant);
-
-      if (isVideoCall) {
-        updateRemoteVideoTrack(participant);
-      }
+      updateRemoteVideoTrack(participant);
     });
 
-    // Remote Participant Left
-    room.on(RoomEvent.ParticipantDisconnected, (participant: RemoteParticipant) => {
+    // 3. Participant Disconnected
+    currentRoom.on(RoomEvent.ParticipantDisconnected, (participant: RemoteParticipant) => {
       console.log('👤 Remote Participant Disconnected:', participant.identity);
       setRemoteParticipant(null);
       setRemoteVideoTrack(null);
     });
 
-    // Track Subscribed (when remote track becomes available)
-    room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
-      console.log('📡 Track Subscribed:', track.kind, 'from', participant.identity);
-
-      if (track.kind === 'video' && publication.source === Track.Source.Camera) {
+    // 4. Track Subscribed (Video available)
+    currentRoom.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+      if (track.kind === Track.Kind.Video && publication.source === Track.Source.Camera) {
+        console.log('🎥 Remote Camera Subscribed:', participant.identity);
         setRemoteVideoTrack(track as RemoteVideoTrack);
       }
     });
 
-    // Track Unsubscribed
-    room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
-      console.log('📡 Track Unsubscribed:', track.kind, 'from', participant.identity);
-
-      if (track.kind === 'video' && publication.source === Track.Source.Camera) {
+    // 5. Track Unsubscribed (Video unavailable)
+    currentRoom.on(RoomEvent.TrackUnsubscribed, (track, publication) => {
+      if (track.kind === Track.Kind.Video && publication.source === Track.Source.Camera) {
+        console.log('🎥 Remote Camera Unsubscribed');
         setRemoteVideoTrack(null);
       }
     });
 
-    // Track Muted/Unmuted (remote participant toggles camera)
-    room.on(RoomEvent.TrackMuted, (publication, participant) => {
-      console.log('🔇 Track Muted:', publication.kind, 'from', participant.identity);
-
-      if (publication.kind === 'video' && publication.source === Track.Source.Camera) {
+    // 6. Track Muted (User turned off camera)
+    currentRoom.on(RoomEvent.TrackMuted, (publication) => {
+      if (publication.kind === Track.Kind.Video && publication.source === Track.Source.Camera) {
         setRemoteVideoTrack(null);
       }
     });
 
-    room.on(RoomEvent.TrackUnmuted, (publication, participant) => {
-      console.log('🔊 Track Unmuted:', publication.kind, 'from', participant.identity);
-
-      if (publication.kind === 'video' && publication.source === Track.Source.Camera) {
-        const remoteParticipant = room.remoteParticipants.get(participant.identity);
-        if (remoteParticipant) {
-          updateRemoteVideoTrack(remoteParticipant);
-        }
+    // 7. Track Unmuted (User turned on camera)
+    currentRoom.on(RoomEvent.TrackUnmuted, (publication, participant) => {
+      if (
+        publication.kind === Track.Kind.Video &&
+        publication.source === Track.Source.Camera &&
+        participant instanceof RemoteParticipant
+      ) {
+        updateRemoteVideoTrack(participant);
       }
     });
 
-    // Handle Disconnection
-    room.on(RoomEvent.Disconnected, (reason) => {
-      console.log('❌ Disconnected from room:', reason);
+    // 8. Disconnected
+    currentRoom.on(RoomEvent.Disconnected, (reason) => {
+      console.log('❌ Room Disconnected:', reason);
       setConnectionState('DISCONNECTED');
-      stopInCallManager();
     });
 
-  }, [startInCallManager, stopInCallManager, isVideoCall, updateRemoteVideoTrack]);
+  }, [updateRemoteVideoTrack]);
 
   // ============================================
   // Connect to Room
@@ -271,182 +186,145 @@ export function useLiveKitRoom(options: UseLiveKitRoomOptions): UseLiveKitRoomRe
     try {
       setError(null);
       setConnectionState('CONNECTING');
+      console.log('🚀 Connecting to LiveKit Room:', credentials.roomName);
 
-      console.log('🚀 Connecting to LiveKit Room:', credentials.roomName, '| Type:', callType);
-
-      // Create new Room instance
+      // Create Room
       const newRoom = new Room({
         adaptiveStream: true,
         dynacast: true,
-        videoCaptureDefaults: isVideoCall ? {
-          resolution: VideoPresets.h720.resolution,
-        } : undefined,
+        videoCaptureDefaults: {
+          resolution: VideoPresets.h540.resolution,
+        },
+        publishDefaults: {
+          simulcast: true,
+          videoSimulcastLayers: [
+            VideoPresets.h180,
+            VideoPresets.h360,
+          ],
+        }
       });
 
       roomRef.current = newRoom;
       setRoom(newRoom);
 
-      // Setup event listeners
+      // Setup Listeners
       setupRoomEventListeners(newRoom);
 
-      // Connect to the room
+      // Connect
       await newRoom.connect(credentials.url, credentials.token, {
         autoSubscribe: true,
       });
 
-      console.log('✅ Connected to LiveKit Room:', credentials.roomName);
+      // --- Setup Initial Media State ---
 
-      // Enable microphone by default
+      // 1. Audio (Always on initially)
       await newRoom.localParticipant.setMicrophoneEnabled(true);
       setIsMuted(false);
 
-      // Enable camera for video calls
+      // 2. Video (Depends on callType)
       if (isVideoCall) {
         await newRoom.localParticipant.setCameraEnabled(true);
         setIsCameraOff(false);
 
-        // Get local video track
-        const localVideo = Array.from(newRoom.localParticipant.videoTrackPublications.values())
-          .find(pub => pub.track && pub.source === Track.Source.Camera);
-
-        if (localVideo?.track) {
-          setLocalVideoTrack(localVideo.track as LocalVideoTrack);
-          console.log('🎥 Local video track enabled');
+        // Fetch the created local video track
+        const localPublication = newRoom.localParticipant.getTrackPublication(Track.Source.Camera);
+        if (localPublication && localPublication.track) {
+          setLocalVideoTrack(localPublication.track as LocalVideoTrack);
         }
+      } else {
+        setIsCameraOff(true);
       }
 
-      // Check if there are already participants in the room
-      const remoteParticipants = Array.from(newRoom.remoteParticipants.values());
-      if (remoteParticipants.length > 0) {
-        const firstParticipant = remoteParticipants[0];
+      // 3. Check for existing participants
+      if (newRoom.remoteParticipants.size > 0) {
+        const firstParticipant = Array.from(newRoom.remoteParticipants.values())[0];
         setRemoteParticipant(firstParticipant);
-        console.log('👤 Found existing remote participant:', firstParticipant.identity);
-
-        if (isVideoCall) {
-          updateRemoteVideoTrack(firstParticipant);
-        }
+        updateRemoteVideoTrack(firstParticipant);
       }
 
     } catch (err: any) {
-      console.error('❌ Failed to connect to LiveKit:', err);
-      setError(err.message || 'Failed to connect to call');
+      console.error('❌ Failed to connect:', err);
+      setError(err.message || 'Connection failed');
       setConnectionState('ERROR');
-      stopInCallManager();
     }
-  }, [setupRoomEventListeners, stopInCallManager, callType, isVideoCall, updateRemoteVideoTrack]);
+  }, [setupRoomEventListeners, isVideoCall, updateRemoteVideoTrack]);
 
   // ============================================
-  // Disconnect from Room
+  // Disconnect
   // ============================================
 
   const disconnect = useCallback(async () => {
-    try {
-      if (roomRef.current) {
-        console.log('👋 Disconnecting from LiveKit Room...');
-        await roomRef.current.disconnect();
-        roomRef.current = null;
-        setRoom(null);
-        setLocalParticipant(null);
-        setRemoteParticipant(null);
-        setLocalVideoTrack(null);
-        setRemoteVideoTrack(null);
-        setConnectionState('DISCONNECTED');
-      }
-
-      stopInCallManager();
-    } catch (err) {
-      console.error('❌ Error disconnecting:', err);
-      stopInCallManager();
+    if (roomRef.current) {
+      console.log('👋 Disconnecting...');
+      await roomRef.current.disconnect();
+      roomRef.current = null;
+      setRoom(null);
+      setLocalParticipant(null);
+      setRemoteParticipant(null);
+      setLocalVideoTrack(null);
+      setRemoteVideoTrack(null);
+      setConnectionState('DISCONNECTED');
     }
-  }, [stopInCallManager]);
+  }, []);
 
   // ============================================
-  // Toggle Mute
+  // Media Controls
   // ============================================
 
   const toggleMute = useCallback(async () => {
-    if (!roomRef.current) return;
+    if (!roomRef.current?.localParticipant || isToggleProcessing.current) return;
 
     try {
+      isToggleProcessing.current = true;
       const newMuteState = !isMuted;
+
       await roomRef.current.localParticipant.setMicrophoneEnabled(!newMuteState);
       setIsMuted(newMuteState);
-      console.log('🎤 Microphone:', newMuteState ? 'Muted' : 'Unmuted');
     } catch (err) {
-      console.error('❌ Error toggling mute:', err);
+      console.error('❌ Toggle mute error:', err);
+    } finally {
+      isToggleProcessing.current = false;
     }
   }, [isMuted]);
 
-  // ============================================
-  // Toggle Speaker
-  // ============================================
-
-  const toggleSpeaker = useCallback(() => {
-    if (!inCallManagerAvailable.current) {
-      console.log('📱 InCallManager not available, cannot toggle speaker');
-      setIsSpeakerOn(prev => !prev);
-      return;
-    }
-
-    try {
-      const newSpeakerState = !isSpeakerOn;
-      InCallManager.setSpeakerphoneOn(newSpeakerState);
-      setIsSpeakerOn(newSpeakerState);
-      console.log('🔊 Speaker:', newSpeakerState ? 'On' : 'Off');
-    } catch (err) {
-      console.error('❌ Error toggling speaker:', err);
-      setIsSpeakerOn(prev => !prev);
-    }
-  }, [isSpeakerOn]);
-
-  // ============================================
-  // Toggle Camera (Video only)
-  // ============================================
-
   const toggleCamera = useCallback(async () => {
-    if (!roomRef.current || !isVideoCall) return;
+    if (!roomRef.current?.localParticipant || isToggleProcessing.current) return;
 
     try {
-      const newCameraState = !isCameraOff;
+      isToggleProcessing.current = true;
+      const newCameraState = !isCameraOff; // Current is Off? Then New is On.
+
       await roomRef.current.localParticipant.setCameraEnabled(!newCameraState);
       setIsCameraOff(newCameraState);
 
       if (newCameraState) {
         // Camera turned OFF
         setLocalVideoTrack(null);
-        console.log('📷 Camera: Off');
       } else {
-        // Camera turned ON - get the new track
-        const localVideo = Array.from(roomRef.current.localParticipant.videoTrackPublications.values())
-          .find(pub => pub.track && pub.source === Track.Source.Camera);
-
-        if (localVideo?.track) {
-          setLocalVideoTrack(localVideo.track as LocalVideoTrack);
+        // Camera turned ON
+        const pub = roomRef.current.localParticipant.getTrackPublication(Track.Source.Camera);
+        if (pub && pub.track) {
+          setLocalVideoTrack(pub.track as LocalVideoTrack);
         }
-        console.log('📷 Camera: On');
       }
     } catch (err) {
-      console.error('❌ Error toggling camera:', err);
+      console.error('❌ Toggle camera error:', err);
+    } finally {
+      isToggleProcessing.current = false;
     }
-  }, [isCameraOff, isVideoCall]);
+  }, [isCameraOff]);
 
   // ============================================
-  // Cleanup on Unmount
+  // Cleanup
   // ============================================
 
   useEffect(() => {
     return () => {
       if (roomRef.current) {
         roomRef.current.disconnect();
-        roomRef.current = null;
       }
-      stopInCallManager();
     };
-  }, [stopInCallManager]);
-
-  // ============================================
-  // Return Hook Values
-  // ============================================
+  }, []);
 
   return {
     connectionState,
@@ -458,8 +336,6 @@ export function useLiveKitRoom(options: UseLiveKitRoomOptions): UseLiveKitRoomRe
     remoteVideoTrack,
     isMuted,
     toggleMute,
-    isSpeakerOn,
-    toggleSpeaker,
     isCameraOff,
     toggleCamera,
     connect,
