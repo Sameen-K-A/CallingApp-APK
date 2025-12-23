@@ -1,3 +1,4 @@
+// user layout
 import { Loading } from "@/components/shared/Loading";
 import { Header } from "@/components/user/Header";
 import { SideDrawer } from "@/components/user/SideDrawer";

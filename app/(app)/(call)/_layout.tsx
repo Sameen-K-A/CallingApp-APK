@@ -1,3 +1,4 @@
+//call layout
 import { Loading } from "@/components/shared/Loading";
 import { useAuth } from "@/context/AuthContext";
 import { Redirect, Stack } from "expo-router";

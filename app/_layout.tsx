@@ -1,3 +1,4 @@
+// root layout
 import { AuthProvider } from "@/context/AuthContext";
 import { toastConfig } from "@/utils/toast";
 import { registerGlobals } from '@livekit/react-native';
