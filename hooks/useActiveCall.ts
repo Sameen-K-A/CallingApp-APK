@@ -71,6 +71,7 @@ export function useActiveCall({
   // ============================================
   // Refs
   // ============================================
+  const isEndingRef = useRef(false);
   const callIdRef = useRef<string | null>(initialCallId || null);
   const hasInitiatedRef = useRef(false);
   const hasConnectedRef = useRef(false);
@@ -103,7 +104,8 @@ export function useActiveCall({
   };
 
   const handleEndCall = () => {
-    if (isEnding) return;
+    if (isEndingRef.current) return;
+    isEndingRef.current = true;
     setIsEnding(true);
 
     const callId = callIdRef.current;
@@ -119,7 +121,8 @@ export function useActiveCall({
   };
 
   const handleCancelCall = () => {
-    if (isEnding) return;
+    if (isEndingRef.current) return;
+    isEndingRef.current = true;
     setIsEnding(true);
 
     if (callIdRef.current) {
@@ -201,7 +204,8 @@ export function useActiveCall({
     });
 
     const unsubEnded = onCallEnded(() => {
-      if (!isEnding) {
+      if (!isEndingRef.current) {
+        isEndingRef.current = true;
         setIsEnding(true);
         showToast("Call ended");
         navigateAway('feedback');
@@ -225,7 +229,8 @@ export function useActiveCall({
     if (role !== "TELECALLER") return;
 
     const unsubEnded = onTelecallerCallEnded(() => {
-      if (!isEnding) {
+      if (!isEndingRef.current) {
+        isEndingRef.current = true;
         setIsEnding(true);
         showToast("Call ended");
         navigateAway('feedback');
