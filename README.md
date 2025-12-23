@@ -55,7 +55,7 @@
 │   │   ├── CallControls.tsx  
 │   │   ├── ConnectingState.tsx  
 │   │   ├── IncomingCallOverlay.tsx  
-│   │   ├── SelfVideoPreview.tsx  
+│   │   ├── CallRoomWrapper.tsx  
 │   │   └── VideoConnectedState.tsx  
 │   ├── shared  
 │   │   ├── account  
