@@ -1,11 +1,14 @@
 import { AudioConnectedState } from "@/components/call/AudioConnectedState";
+import { CallRoomWrapper } from "@/components/call/CallRoomWrapper";
 import { ConnectingState } from "@/components/call/ConnectingState";
 import { useActiveCall } from "@/hooks/useActiveCall";
+import { useCallTimer } from "@/hooks/useCallTimer";
 import { LiveKitCredentials } from "@/socket/types";
+import { showErrorToast } from "@/utils/toast";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React from "react";
+import React, { useCallback, useRef } from "react";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -33,9 +36,7 @@ export default function AudioCall() {
 
   const {
     callState,
-    isEnding,
-    formattedTime,
-    liveKit,
+    livekitCredentials,
     handleEndCall,
     handleCancelCall,
   } = useActiveCall({
@@ -46,12 +47,34 @@ export default function AudioCall() {
     initialLiveKitCredentials: initialCreds,
   });
 
+  const { formatted, start: startTimer } = useCallTimer();
+  const timerStartedRef = useRef(false);
+
   const isAndroid = Platform.OS === "android";
 
-  const isWaitingForRemote =
-    !isEnding &&
-    callState === "CONNECTED" &&
-    (liveKit.connectionState !== "CONNECTED" || liveKit.remoteParticipant === null);
+  const handleTimerStart = useCallback(() => {
+    if (!timerStartedRef.current) {
+      timerStartedRef.current = true;
+      startTimer();
+      console.log('⏱️ Timer started');
+    }
+  }, [startTimer]);
+
+  const handleConnected = useCallback(() => {
+    console.log('✅ LiveKit Connected');
+  }, []);
+
+  const handleDisconnected = useCallback(() => {
+    console.log('❌ LiveKit Disconnected');
+  }, []);
+
+  const handleError = useCallback((error: Error) => {
+    console.error('❌ LiveKit Error:', error);
+    showErrorToast('Call connection failed');
+  }, []);
+
+  // Determine which credentials to use
+  const activeCredentials = livekitCredentials || initialCreds;
 
   return (
     <>
@@ -70,22 +93,28 @@ export default function AudioCall() {
             paddingBottom: isAndroid ? insets.bottom : 0,
           }}
         >
-          {callState === "CONNECTING" ? (
+          {callState === "CONNECTED" && activeCredentials ? (
+            <CallRoomWrapper
+              credentials={activeCredentials}
+              callType="AUDIO"
+              onConnected={handleConnected}
+              onDisconnected={handleDisconnected}
+              onError={handleError}
+            >
+              <AudioConnectedState
+                name={params.participantName || "Unknown"}
+                profile={params.participantProfile}
+                timer={formatted}
+                onTimerStart={handleTimerStart}
+                onEndCall={handleEndCall}
+              />
+            </CallRoomWrapper>
+          ) : (
             <ConnectingState
               name={params.participantName || "Unknown"}
               profile={params.participantProfile}
               callType="AUDIO"
               onCancel={handleCancelCall}
-            />
-          ) : (
-            <AudioConnectedState
-              name={params.participantName || "Unknown"}
-              profile={params.participantProfile}
-              timer={formattedTime}
-              isWaitingForRemote={isWaitingForRemote}
-              isMuted={liveKit.isMuted}
-              onToggleMute={liveKit.toggleMute}
-              onEndCall={handleEndCall}
             />
           )}
         </View>

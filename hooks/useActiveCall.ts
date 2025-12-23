@@ -1,5 +1,3 @@
-import { useCallTimer } from "@/hooks/useCallTimer";
-import { useLiveKitRoom } from "@/hooks/useLiveKitRoom";
 import {
   emitCallEnd as emitTelecallerCallEnd,
   onCallEnded as onTelecallerCallEnded,
@@ -27,7 +25,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { BackHandler } from "react-native";
 
-type CallState = "CONNECTING" | "CONNECTED";
+type CallState = "IDLE" | "CONNECTING" | "CONNECTED";
 type Role = "USER" | "TELECALLER";
 type CallType = "AUDIO" | "VIDEO";
 
@@ -39,20 +37,29 @@ export interface UseActiveCallProps {
   initialLiveKitCredentials?: LiveKitCredentials | null;
 }
 
+export interface UseActiveCallReturn {
+  callState: CallState;
+  isEnding: boolean;
+  livekitCredentials: LiveKitCredentials | null;
+  callId: string | null;
+  handleEndCall: () => void;
+  handleCancelCall: () => void;
+}
+
 export function useActiveCall({
   initialCallId,
   participantId,
   callType,
   role,
   initialLiveKitCredentials,
-}: UseActiveCallProps) {
+}: UseActiveCallProps): UseActiveCallReturn {
   const router = useRouter();
 
   // ============================================
   // State
   // ============================================
   const [callState, setCallState] = useState<CallState>(
-    role === "TELECALLER" ? "CONNECTED" : "CONNECTING"
+    role === "TELECALLER" && initialLiveKitCredentials ? "CONNECTED" : "IDLE"
   );
 
   const [livekitCredentials, setLivekitCredentials] = useState<LiveKitCredentials | null>(
@@ -62,19 +69,8 @@ export function useActiveCall({
   const [isEnding, setIsEnding] = useState(false);
 
   // ============================================
-  // Hooks & Refs
+  // Refs
   // ============================================
-  const { seconds, formatted, start, stop } = useCallTimer();
-
-  const liveKit = useLiveKitRoom({ callType });
-  const {
-    connectionState,
-    remoteParticipant,
-    error: liveKitError,
-    connect,
-    disconnect
-  } = liveKit;
-
   const callIdRef = useRef<string | null>(initialCallId || null);
   const hasInitiatedRef = useRef(false);
   const hasConnectedRef = useRef(false);
@@ -87,20 +83,12 @@ export function useActiveCall({
     if (isNavigatingRef.current) return;
     isNavigatingRef.current = true;
 
-    // 1. Stop Timer
-    stop();
-
-    // 2. Disconnect Media
-    disconnect();
-
-    // 3. Navigation
     if (destination === 'feedback') {
       router.replace({
         pathname: "/(app)/(call)/feedback",
         params: {
           callId: callIdRef.current || "",
           participantId,
-          duration: seconds.toString(),
           callType,
           role,
         },
@@ -145,14 +133,12 @@ export function useActiveCall({
   // ============================================
   useEffect(() => {
     const backAction = () => {
-      // If call is connected, treat back button as "End Call"
       if (callState === "CONNECTED") {
         handleEndCall();
       } else {
-        // If connecting, treat as "Cancel"
         handleCancelCall();
       }
-      return true; // Prevent default behavior (app closing)
+      return true;
     };
 
     const backHandler = BackHandler.addEventListener(
@@ -162,47 +148,6 @@ export function useActiveCall({
 
     return () => backHandler.remove();
   }, [callState]);
-
-  // ============================================
-  // Side Effect: LiveKit Connection
-  // ============================================
-  useEffect(() => {
-    if (livekitCredentials && !hasConnectedRef.current) {
-      hasConnectedRef.current = true;
-      connect(livekitCredentials);
-    }
-  }, [livekitCredentials, connect]);
-
-  // Monitor LiveKit Errors OR Unexpected Disconnects
-  useEffect(() => {
-    if (liveKitError) {
-      showErrorToast(liveKitError);
-      navigateAway('home');
-    }
-
-    // If LiveKit disconnects from the server side (e.g. network lost, room closed)
-    // We should end the call flow locally if we are supposed to be connected
-    if (connectionState === 'DISCONNECTED' && hasConnectedRef.current && !isEnding) {
-      console.log('🔌 LiveKit disconnected unexpectedly');
-      showToast("Call disconnected");
-      navigateAway('feedback');
-    }
-  }, [liveKitError, connectionState, isEnding]);
-
-  // ============================================
-  // Side Effect: Timer Logic
-  // ============================================
-  useEffect(() => {
-    if (
-      !isEnding &&
-      callState === "CONNECTED" &&
-      connectionState === "CONNECTED" &&
-      remoteParticipant !== null
-    ) {
-      start();
-    }
-    return () => stop();
-  }, [callState, connectionState, remoteParticipant, isEnding]);
 
   // ============================================
   // Side Effect: Socket Listeners (USER)
@@ -218,7 +163,8 @@ export function useActiveCall({
       return;
     }
 
-    // Call Initiate
+    setCallState("CONNECTING");
+
     const success = emitCallInitiate({ telecallerId: participantId, callType });
     if (!success) {
       showErrorToast("Connection lost. Please restart.");
@@ -226,12 +172,15 @@ export function useActiveCall({
       return;
     }
 
-    // Listeners
     const unsubRinging = onCallRinging((data: CallRingingPayload) => {
       callIdRef.current = data.callId;
     });
 
     const unsubAccepted = onCallAccepted((data: CallAcceptedPayload) => {
+      if (hasConnectedRef.current) return;
+
+      hasConnectedRef.current = true;
+      callIdRef.current = data.callId;
       setLivekitCredentials(data.livekit);
       setCallState("CONNECTED");
     });
@@ -266,7 +215,6 @@ export function useActiveCall({
       unsubMissed();
       unsubError();
       unsubEnded();
-      stop();
     };
   }, []);
 
@@ -286,16 +234,14 @@ export function useActiveCall({
 
     return () => {
       unsubEnded();
-      stop();
     };
   }, []);
 
   return {
     callState,
     isEnding,
-    formattedTime: formatted,
-    timerSeconds: seconds,
-    liveKit,
+    livekitCredentials,
+    callId: callIdRef.current,
     handleEndCall,
     handleCancelCall,
   };

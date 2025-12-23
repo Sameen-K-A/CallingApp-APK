@@ -1,60 +1,28 @@
 import { CallControls } from "@/components/call/CallControls";
-import { SelfVideoPreview } from "@/components/call/SelfVideoPreview";
 import { Avatar } from "@/components/shared/avatars";
+import { useLiveKitControls } from "@/hooks/useLiveKitRoom";
 import { getInitials } from "@/utils/formatter";
 import { Ionicons } from "@expo/vector-icons";
-import { VideoView } from "@livekit/react-native";
+import { VideoTrack, useTracks } from "@livekit/react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { LocalVideoTrack, RemoteVideoTrack } from "livekit-client";
-import React from "react";
+import { Track } from "livekit-client";
+import React, { useEffect, useMemo } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
 interface VideoConnectedStateProps {
   name: string;
   profile?: string;
   timer: string;
-  isWaitingForRemote: boolean;
-  isMuted: boolean;
-  isCameraOff: boolean;
-  isRemoteCameraOff: boolean;
-  localVideoTrack: LocalVideoTrack | null;
-  remoteVideoTrack: RemoteVideoTrack | null;
   topInset: number;
   bottomInset: number;
-  onToggleMute: () => void;
-  onToggleCamera: () => void;
+  onTimerStart: () => void;
   onEndCall: () => void;
 }
 
 // ============================================
-// Remote Video View Component
-// ============================================
-
-interface RemoteVideoViewProps {
-  track: RemoteVideoTrack;
-}
-
-const RemoteVideoView: React.FC<RemoteVideoViewProps> = ({ track }) => {
-  return (
-    <VideoView
-      videoTrack={track}
-      style={{ flex: 1 }}
-      objectFit="cover"
-      zOrder={0}
-    />
-  );
-};
-
-// ============================================
 // Waiting For Remote State
 // ============================================
-
-interface WaitingStateProps {
-  name: string;
-  profile?: string;
-}
-
-const WaitingState: React.FC<WaitingStateProps> = ({ name, profile }) => {
+const WaitingState: React.FC<{ name: string }> = ({ name }) => {
   return (
     <View className="flex-1 bg-neutral-900 items-center justify-center">
       <ActivityIndicator size="large" color="#A855F7" style={{ marginBottom: 16 }} />
@@ -71,13 +39,7 @@ const WaitingState: React.FC<WaitingStateProps> = ({ name, profile }) => {
 // ============================================
 // Remote Camera Off State
 // ============================================
-
-interface CameraOffStateProps {
-  name: string;
-  profile?: string;
-}
-
-const CameraOffState: React.FC<CameraOffStateProps> = ({ name, profile }) => {
+const CameraOffState: React.FC<{ name: string; profile?: string }> = ({ name, profile }) => {
   return (
     <View className="flex-1 bg-neutral-900 items-center justify-center">
       <View className="w-32 h-32 rounded-full bg-white/10 border-2 border-white/20 items-center justify-center overflow-hidden mb-4">
@@ -101,66 +63,105 @@ const CameraOffState: React.FC<CameraOffStateProps> = ({ name, profile }) => {
 };
 
 // ============================================
-// Loading Video State
-// ============================================
-
-const LoadingVideoState: React.FC = () => {
-  return (
-    <View className="flex-1 bg-neutral-800 items-center justify-center">
-      <ActivityIndicator size="large" color="#A855F7" />
-      <Text allowFontScaling={false} className="text-white/50 text-sm mt-2">
-        Loading video...
-      </Text>
-    </View>
-  );
-};
-
-// ============================================
 // Main Component
 // ============================================
-
 export const VideoConnectedState: React.FC<VideoConnectedStateProps> = ({
   name,
   profile,
   timer,
-  isWaitingForRemote,
-  isMuted,
-  isCameraOff,
-  isRemoteCameraOff,
-  localVideoTrack,
-  remoteVideoTrack,
   topInset,
   bottomInset,
-  onToggleMute,
-  onToggleCamera,
+  onTimerStart,
   onEndCall,
 }) => {
-  const renderMainContent = () => {
+  const {
+    connectionState,
+    hasRemoteParticipant,
+    isRemoteCameraOff,
+    isMuted,
+    toggleMute,
+    isCameraOff,
+    toggleCamera,
+  } = useLiveKitControls('VIDEO');
 
-    // Waiting for remote participant to join
+  // Get all video tracks
+  const tracks = useTracks([Track.Source.Camera]);
+
+  // Find remote and local camera tracks
+  const remoteCameraTrack = useMemo(() => {
+    return tracks.find(
+      (trackRef) => !trackRef.participant.isLocal && trackRef.source === Track.Source.Camera
+    );
+  }, [tracks]);
+
+  const localCameraTrack = useMemo(() => {
+    return tracks.find(
+      (trackRef) => trackRef.participant.isLocal && trackRef.source === Track.Source.Camera
+    );
+  }, [tracks]);
+
+  const isWaitingForRemote = connectionState !== 'CONNECTED' || !hasRemoteParticipant;
+
+  // Start timer when both parties are connected
+  useEffect(() => {
+    if (connectionState === 'CONNECTED' && hasRemoteParticipant) {
+      onTimerStart();
+    }
+  }, [connectionState, hasRemoteParticipant, onTimerStart]);
+
+  // Render remote video section
+  const renderRemoteVideo = () => {
     if (isWaitingForRemote) {
-      return <WaitingState name={name} profile={profile} />;
+      return <WaitingState name={name} />;
     }
 
-    // Remote participant joined but camera is off
-    if (isRemoteCameraOff) {
+    if (isRemoteCameraOff || !remoteCameraTrack) {
       return <CameraOffState name={name} profile={profile} />;
     }
 
-    // Remote participant has video track
-    if (remoteVideoTrack) {
-      return <RemoteVideoView track={remoteVideoTrack} />;
+    return (
+      <VideoTrack
+        trackRef={remoteCameraTrack}
+        style={{ flex: 1 }}
+        objectFit="cover"
+        zOrder={0}
+      />
+    );
+  };
+
+  // Render local video preview
+  const renderLocalVideo = () => {
+    if (isCameraOff || !localCameraTrack) {
+      return (
+        <View className="w-28 h-40 rounded-2xl overflow-hidden border-2 border-white/20 bg-neutral-800 items-center justify-center">
+          <View className="w-14 h-14 rounded-full bg-white/10 items-center justify-center">
+            <Ionicons name="videocam-off" size={24} color="#FFFFFF80" />
+          </View>
+        </View>
+      );
     }
 
-    // Fallback: waiting for video track (connected, not muted, but track pending)
-    return <LoadingVideoState />;
+    return (
+      <View
+        className="w-28 h-40 border-2 border-white/20"
+        style={{ borderRadius: 16, overflow: "hidden" }}
+      >
+        <VideoTrack
+          trackRef={localCameraTrack}
+          style={{ flex: 1, borderRadius: 16 }}
+          objectFit="cover"
+          mirror
+          zOrder={1}
+        />
+      </View>
+    );
   };
 
   return (
     <View className="flex-1">
       {/* Remote Video / Placeholder (Full Screen Background) */}
       <View className="absolute inset-0">
-        {renderMainContent()}
+        {renderRemoteVideo()}
       </View>
 
       {/* Top Gradient Overlay */}
@@ -202,12 +203,7 @@ export const VideoConnectedState: React.FC<VideoConnectedStateProps> = ({
 
       {/* Self Video Preview (Bottom Right) */}
       <View className="absolute right-6" style={{ bottom: bottomInset + 120 }}>
-        <SelfVideoPreview
-          name="You"
-          profile={undefined}
-          isCameraOff={isCameraOff}
-          localVideoTrack={localVideoTrack}
-        />
+        {renderLocalVideo()}
       </View>
 
       {/* Bottom Gradient Overlay */}
@@ -229,8 +225,8 @@ export const VideoConnectedState: React.FC<VideoConnectedStateProps> = ({
           callType="VIDEO"
           isMuted={isMuted}
           isCameraOff={isCameraOff}
-          onToggleMute={onToggleMute}
-          onToggleCamera={onToggleCamera}
+          onToggleMute={toggleMute}
+          onToggleCamera={toggleCamera}
           onEndCall={onEndCall}
         />
       </View>

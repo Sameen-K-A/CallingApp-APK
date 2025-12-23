@@ -1,16 +1,15 @@
 import { CallControls } from "@/components/call/CallControls";
 import { Avatar } from "@/components/shared/avatars";
+import { useLiveKitControls } from "@/hooks/useLiveKitRoom";
 import { getInitials } from "@/utils/formatter";
-import React from "react";
+import React, { useEffect } from "react";
 import { Text, View } from "react-native";
 
 interface AudioConnectedStateProps {
   name: string;
   profile?: string;
   timer: string;
-  isWaitingForRemote: boolean;
-  isMuted: boolean;
-  onToggleMute: () => void;
+  onTimerStart: () => void;
   onEndCall: () => void;
 }
 
@@ -18,11 +17,25 @@ export const AudioConnectedState: React.FC<AudioConnectedStateProps> = ({
   name,
   profile,
   timer,
-  isWaitingForRemote,
-  isMuted,
-  onToggleMute,
+  onTimerStart,
   onEndCall,
 }) => {
+  const {
+    connectionState,
+    hasRemoteParticipant,
+    isMuted,
+    toggleMute,
+  } = useLiveKitControls('AUDIO');
+
+  const isWaitingForRemote = connectionState !== 'CONNECTED' || !hasRemoteParticipant;
+
+  // Start timer when both parties are connected
+  useEffect(() => {
+    if (connectionState === 'CONNECTED' && hasRemoteParticipant) {
+      onTimerStart();
+    }
+  }, [connectionState, hasRemoteParticipant, onTimerStart]);
+
   return (
     <View className="flex-1">
       <View className="items-center pt-4">
@@ -94,7 +107,7 @@ export const AudioConnectedState: React.FC<AudioConnectedStateProps> = ({
         <CallControls
           callType="AUDIO"
           isMuted={isMuted}
-          onToggleMute={onToggleMute}
+          onToggleMute={toggleMute}
           onEndCall={onEndCall}
         />
       </View>

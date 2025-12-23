@@ -1,11 +1,14 @@
+import { CallRoomWrapper } from "@/components/call/CallRoomWrapper";
 import { ConnectingState } from "@/components/call/ConnectingState";
 import { VideoConnectedState } from "@/components/call/VideoConnectedState";
 import { useActiveCall } from "@/hooks/useActiveCall";
+import { useCallTimer } from "@/hooks/useCallTimer";
 import { LiveKitCredentials } from "@/socket/types";
+import { showErrorToast } from "@/utils/toast";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React from "react";
+import React, { useCallback, useRef } from "react";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -33,9 +36,7 @@ export default function VideoCall() {
 
   const {
     callState,
-    isEnding,
-    formattedTime,
-    liveKit,
+    livekitCredentials,
     handleEndCall,
     handleCancelCall,
   } = useActiveCall({
@@ -46,23 +47,60 @@ export default function VideoCall() {
     initialLiveKitCredentials: initialCreds,
   });
 
+  const { formatted, start: startTimer } = useCallTimer();
+  const timerStartedRef = useRef(false);
+
   const isAndroid = Platform.OS === "android";
 
-  const isWaitingForRemote =
-    !isEnding &&
-    callState === "CONNECTED" &&
-    (liveKit.connectionState !== "CONNECTED" || liveKit.remoteParticipant === null);
+  const handleTimerStart = useCallback(() => {
+    if (!timerStartedRef.current) {
+      timerStartedRef.current = true;
+      startTimer();
+      console.log('⏱️ Timer started');
+    }
+  }, [startTimer]);
 
-  const isRemoteCameraOff =
-    !isEnding &&
-    liveKit.remoteParticipant !== null &&
-    liveKit.remoteVideoTrack === null;
+  const handleConnected = useCallback(() => {
+    console.log('✅ LiveKit Connected');
+  }, []);
+
+  const handleDisconnected = useCallback(() => {
+    console.log('❌ LiveKit Disconnected');
+  }, []);
+
+  const handleError = useCallback((error: Error) => {
+    console.error('❌ LiveKit Error:', error);
+    showErrorToast('Call connection failed');
+  }, []);
+
+  // Determine which credentials to use
+  const activeCredentials = livekitCredentials || initialCreds;
 
   return (
     <>
       <StatusBar style="light" />
 
-      {callState === "CONNECTING" ? (
+      {callState === "CONNECTED" && activeCredentials ? (
+        <View className="flex-1 bg-black">
+          <CallRoomWrapper
+            credentials={activeCredentials}
+            callType="VIDEO"
+            onConnected={handleConnected}
+            onDisconnected={handleDisconnected}
+            onError={handleError}
+          >
+            <VideoConnectedState
+              name={params.participantName || "Unknown"}
+              profile={params.participantProfile}
+              timer={formatted}
+              topInset={insets.top}
+              bottomInset={isAndroid ? insets.bottom : 0}
+              onTimerStart={handleTimerStart}
+              onEndCall={handleEndCall}
+            />
+          </CallRoomWrapper>
+        </View>
+      ) : (
         <LinearGradient
           colors={["#000000", "#171717", "#0f0f0f"]}
           style={{ flex: 1 }}
@@ -84,25 +122,6 @@ export default function VideoCall() {
             />
           </View>
         </LinearGradient>
-      ) : (
-        <View className="flex-1 bg-black">
-          <VideoConnectedState
-            name={params.participantName || "Unknown"}
-            profile={params.participantProfile}
-            timer={formattedTime}
-            isWaitingForRemote={isWaitingForRemote}
-            isMuted={liveKit.isMuted}
-            isCameraOff={liveKit.isCameraOff}
-            isRemoteCameraOff={isRemoteCameraOff}
-            localVideoTrack={liveKit.localVideoTrack}
-            remoteVideoTrack={liveKit.remoteVideoTrack}
-            topInset={insets.top}
-            bottomInset={isAndroid ? insets.bottom : 0}
-            onToggleMute={liveKit.toggleMute}
-            onToggleCamera={liveKit.toggleCamera}
-            onEndCall={handleEndCall}
-          />
-        </View>
       )}
     </>
   );
