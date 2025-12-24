@@ -1,8 +1,6 @@
 import { getUserProfile } from "@/services/api.service";
 import { cleanupTelecallerSocket } from "@/socket/hooks/useTelecallerSocket";
 import { cleanupUserSocket } from "@/socket/hooks/useUserSocket";
-import { disconnectTelecallerSocket } from "@/socket/telecaller.socket";
-import { disconnectUserSocket } from "@/socket/user.socket";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
 import { IAuthUser, ITelecaller, IUser } from "../types/general";
@@ -73,8 +71,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const clearAuthData = async () => {
     cleanupUserSocket();
     cleanupTelecallerSocket();
-    disconnectUserSocket();
-    disconnectTelecallerSocket();
 
     await AsyncStorage.multiRemove([AUTH_TOKEN_KEY, USER_DATA_KEY]);
 

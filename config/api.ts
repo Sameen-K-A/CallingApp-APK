@@ -1,4 +1,4 @@
-const IP_ADDRESS = '192.168.43.137'
+const IP_ADDRESS = '192.168.1.5'
 
 export const API_CONFIG = {
   BASE_URL: `http://${IP_ADDRESS}:8000`,

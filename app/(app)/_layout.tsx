@@ -10,14 +10,17 @@ function SocketConnection() {
 
   const shouldConnectSocket = isProfileComplete();
 
-  useUserSocket(shouldConnectSocket && isUser() ? token : null);
-  useTelecallerSocket(shouldConnectSocket && isTelecaller() && getTelecallerApprovalStatus() === "APPROVED" ? token : null);
+  const userToken = shouldConnectSocket && isUser() ? token : null;
+  const telecallerToken = shouldConnectSocket && isTelecaller() && getTelecallerApprovalStatus() === "APPROVED" ? token : null;
+
+  useUserSocket(userToken);
+  useTelecallerSocket(telecallerToken);
 
   return null;
 }
 
 export default function AppLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return <Loading />;
@@ -27,9 +30,12 @@ export default function AppLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
+  // Key changes when user ID changes, forcing SocketConnection to remount
+  const socketKey = user?._id || 'no-user';
+
   return (
     <>
-      <SocketConnection />
+      <SocketConnection key={socketKey} />
       <Stack screenOptions={{ headerShown: false }} />
     </>
   );

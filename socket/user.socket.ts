@@ -15,14 +15,104 @@ import {
 type UserSocket = Socket<UserServerEvents, UserClientEvents>;
 
 let socket: UserSocket | null = null;
-let isManuallyDisconnected = false;
+let currentToken: string | null = null;
+let connectionAttemptInProgress = false;
 
-// Helper Functions
+// ============================================
+// Connection Management
+// ============================================
+export const connectUserSocket = (token: string): UserSocket | null => {
+
+  // Already connected with same token
+  if (socket?.connected && currentToken === token) {
+    return socket;
+  }
+
+  // Connection attempt already in progress
+  if (connectionAttemptInProgress) {
+    return socket;
+  }
+
+  // Different token - disconnect old socket first
+  if (socket && currentToken !== token) {
+    socket.removeAllListeners();
+    socket.disconnect();
+    socket = null;
+  }
+
+  // Already have a socket (might be disconnected), try to reuse
+  if (socket) {
+    if (!socket.connected) {
+      socket.connect();
+    }
+    return socket;
+  }
+
+  connectionAttemptInProgress = true;
+  currentToken = token;
+
+
+  socket = io(`${API_CONFIG.SOCKET_URL}/user`, {
+    auth: { token },
+    transports: ['websocket', 'polling'],
+    reconnection: true,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    timeout: 20000,
+  });
+
+  socket.on('connect', () => {
+    connectionAttemptInProgress = false;
+    console.log('👤 ✅ User socket connected:', socket?.id);
+  });
+
+  socket.on('disconnect', (reason) => {
+    console.log('👤 ❌ User socket disconnected:', reason);
+
+    // If server disconnected us, don't auto-reconnect
+    if (reason === 'io server disconnect') {
+      currentToken = null;
+    }
+  });
+
+  socket.on('connect_error', (error) => {
+    connectionAttemptInProgress = false;
+    console.log('👤 ⚠️ User socket connection error:', error.message);
+  });
+
+  socket.on('error', (data) => {
+    showErrorToast(data.message);
+  });
+
+  return socket;
+};
+
+export const disconnectUserSocket = (): void => {
+  if (socket) {
+    socket.removeAllListeners();
+    socket.disconnect();
+    socket = null;
+    currentToken = null;
+    connectionAttemptInProgress = false;
+  }
+};
+
+export const getUserSocket = (): UserSocket | null => socket;
+
+export const isUserSocketConnected = (): boolean => socket?.connected ?? false;
+
+export const getUserSocketState = (): { connected: boolean; hasSocket: boolean; token: string | null } => (
+  { connected: socket?.connected ?? false, hasSocket: socket !== null, token: currentToken, }
+);
+
+// ============================================
+// Event Helpers
+// ============================================
 const createEventSubscriber = <T>(eventName: keyof UserServerEvents) => {
   return (callback: (data: T) => void): (() => void) => {
     if (!socket) {
-      showErrorToast("Connection lost, Please restart the app");
-      console.log(`👤 ⚠️ Cannot subscribe to ${eventName}: socket is null`);
+      console.warn(`👤 ⚠️ Cannot subscribe to ${eventName}: socket is null`);
       return () => { };
     }
 
@@ -37,8 +127,7 @@ const createEventSubscriber = <T>(eventName: keyof UserServerEvents) => {
 const createEventEmitter = <T>(eventName: keyof UserClientEvents) => {
   return (payload: T): boolean => {
     if (!socket?.connected) {
-      showErrorToast("Connection lost, Please restart the app");
-      console.log(`👤 ⚠️ Cannot emit ${eventName}: socket not connected`);
+      console.warn(`👤 ⚠️ Cannot emit ${eventName}: socket not connected`);
       return false;
     }
 
@@ -46,62 +135,6 @@ const createEventEmitter = <T>(eventName: keyof UserClientEvents) => {
     return true;
   };
 };
-
-// Socket Connection Management
-export const connectUserSocket = (token: string): UserSocket => {
-  if (socket?.connected) {
-    console.log('👤 User socket already connected');
-    return socket;
-  }
-
-  if (socket) {
-    socket.removeAllListeners();
-    socket.disconnect();
-    socket = null;
-  }
-
-  isManuallyDisconnected = false;
-
-  socket = io(`${API_CONFIG.SOCKET_URL}/user`, {
-    auth: { token },
-    transports: ['websocket', 'polling'],
-    reconnection: true,
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
-  });
-
-  socket.on('connect', () => {
-    console.log('👤 ✅ User socket connected:', socket?.id);
-  });
-
-  socket.on('disconnect', (reason) => {
-    console.log('👤 ❌ User socket disconnected:', reason);
-  });
-
-  socket.on('connect_error', (error) => {
-    console.log('👤 ⚠️ User socket connection error:', error.message);
-  });
-
-  socket.on('error', (data) => {
-    showErrorToast(data.message);
-  });
-
-  return socket;
-};
-
-export const disconnectUserSocket = (): void => {
-  if (socket) {
-    isManuallyDisconnected = true;
-    socket.disconnect();
-    socket = null;
-  }
-};
-
-export const getUserSocket = (): UserSocket | null => socket;
-
-export const isUserSocketConnected = (): boolean => socket?.connected ?? false;
-
-export const isUserSocketManuallyDisconnected = (): boolean => isManuallyDisconnected;
 
 // Call Event Listeners
 export const onTelecallerPresenceChanged = createEventSubscriber<TelecallerPresencePayload>('telecaller:presence-changed');
