@@ -61,11 +61,11 @@ export const Header: React.FC = () => {
       <View className="flex-row px-6 py-3">
         <View className="flex-1">
           <Text allowFontScaling={false} className="text-xl font-bold text-text text-center">
-            {headerContent?.heading || "Page"}
+            {headerContent?.heading || ""}
           </Text>
 
           <Text allowFontScaling={false} className="text-sm text-textMuted text-center">
-            {headerContent?.description || "Description"}
+            {headerContent?.description || ""}
           </Text>
         </View>
       </View>
